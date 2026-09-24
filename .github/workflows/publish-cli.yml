@@ -1,0 +1,51 @@
+name: Publish CLI
+
+# Push a tag named cli-v<version>, matching packages/cli/package.json, to release.
+on:
+  push:
+    tags: ['cli-v*']
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+jobs:
+  publish:
+    name: Publish @beastjs/cli
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check the tag matches the package version
+        run: |
+          version=$(node -p "require('./packages/cli/package.json').version")
+          if [ "$GITHUB_REF_NAME" != "cli-v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match packages/cli version $version"
+            exit 1
+          fi
+
+      - name: Check
+        run: bun run check
+
+      # bun pm pack builds the CLI and rewrites workspace: dependency ranges.
+      - name: Pack
+        working-directory: packages/cli
+        run: bun pm pack --destination "$RUNNER_TEMP/pack" --quiet
+
+      - name: Publish
+        run: npm publish "$RUNNER_TEMP"/pack/*.tgz --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

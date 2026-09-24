@@ -26,9 +26,11 @@ All notable changes to `beast-ui` will be recorded here.
 - `button`, `utils`, and `theme` registry items.
 - Docs site with live component previews and links to the published JSON.
 - CI workflow running typecheck, tests, and the build on push and pull request.
-- `@beast-ui/cli` is packaged for npm: it ships a single bundled file with no
-  runtime dependencies, a package README, and repository metadata. A test packs
-  the CLI, installs the tarball with npm, and runs `init` and `add` under Node.
+- `@beastjs/cli` 0.1.0, published from `cli-v*` tags by
+  `.github/workflows/publish-cli.yml` with npm provenance. It ships a single
+  bundled file with no runtime dependencies, a package README, and repository
+  metadata. A test packs the CLI, installs the tarball with npm, and runs
+  `init` and `add` under Node.
 
 ### Changed
 

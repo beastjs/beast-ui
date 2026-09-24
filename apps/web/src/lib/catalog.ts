@@ -2,8 +2,7 @@ import registry from '../../../../registry.json'
 
 export const REGISTRY_URL = 'https://beast-ui-registry.beastjs.workers.dev/r'
 export const REPOSITORY_URL = 'https://github.com/beastjs/beast-ui'
-// The CLI runs from a beast-ui checkout until @beast-ui/cli is published to npm.
-export const CLI = 'bun run cli'
+export const CLI = 'npx @beastjs/cli'
 
 export interface CatalogItem {
   name: string
@@ -40,4 +39,4 @@ export function findComponent(name: string | undefined): CatalogItem | undefined
 }
 
 export const itemUrl = (name: string): string => `${REGISTRY_URL}/${name}.json`
-export const addCommand = (name: string): string => `${CLI} add ${name} --cwd ../my-app`
+export const addCommand = (name: string): string => `${CLI} add ${name}`

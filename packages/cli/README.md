@@ -1,4 +1,4 @@
-# @beast-ui/cli
+# @beastjs/cli
 
 Copy [Beast UI](https://github.com/beastjs/beast-ui) components into a Beast +
 Octane project. Components are not a runtime dependency: the CLI writes their
@@ -7,10 +7,10 @@ source into your app, where you own and edit it.
 Requires Node 22.22.2 or newer.
 
 ```bash
-npx @beast-ui/cli init
-npx @beast-ui/cli list
-npx @beast-ui/cli add button --dry-run
-npx @beast-ui/cli add button
+npx @beastjs/cli init
+npx @beastjs/cli list
+npx @beastjs/cli add button --dry-run
+npx @beastjs/cli add button
 ```
 
 `init` writes `beast-ui.json` to an existing project, using the hosted registry
