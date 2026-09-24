@@ -8,7 +8,8 @@ import { promisify } from 'node:util'
 import { assertContainedImports, buildRegistry } from '../scripts/build-registry.ts'
 import { addComponents, installDependencies, planFiles } from '../packages/cli/src/commands/add.ts'
 import { DEFAULT_REGISTRY, initConfig, readConfig } from '../packages/cli/src/utils/config.ts'
-import { fetchComponent, resolveItems } from '../packages/cli/src/utils/registry.ts'
+import { fetchCatalog, fetchComponent, resolveItems } from '../packages/cli/src/utils/registry.ts'
+import { formatCatalog } from '../packages/cli/src/utils/catalog.ts'
 import { registryItemSchema, type RegistryItem } from '@beast-ui/registry/schema'
 
 const run = promisify(execFile)
@@ -53,7 +54,7 @@ describe('registry distribution', () => {
     expect(button.registryDependencies).toEqual(['utils', 'theme'])
     await writeFile(path.join(output, 'stale.json'), '{}')
     await buildRegistry(root, output)
-    expect((await readdir(output)).sort()).toEqual(['button.json', 'call-chip.json', 'registry.json', 'scrubfield.json', 'squishy.json', 'theme.json', 'utils.json'])
+    expect((await readdir(output)).sort()).toEqual(['button-bouncy.json', 'button-ripple.json', 'button.json', 'call-chip.json', 'registry.json', 'scrubfield.json', 'squishy.json', 'theme.json', 'utils.json'])
     expect(await readFile(path.join(output, 'button.json'), 'utf8')).toBe(before)
   })
 
@@ -223,6 +224,59 @@ describe('registry distribution', () => {
       expect(await Bun.file(path.join(root, `apps/web/src/previews/${name}-preview.btsx`)).exists()).toBe(true)
       expect(previews).toContain(`import('./${name}-preview.btsx')`)
     }
+  })
+
+  test('installs button variants with the base button and their own dependencies', async () => {
+    const cwd = await project()
+    await initConfig(cwd, await registryServer(), 'bun')
+    const result = await addComponents(['button-bouncy', 'button-ripple'], { cwd, skipInstall: true })
+    expect(result.dependencies).toContain('@octanejs/motion@^0.1.54')
+    expect(result.dependencies).toContain('@octanejs/base-ui@0.1.55')
+    for (const name of ['button', 'button-bouncy', 'button-ripple']) {
+      expect(await readFile(path.join(cwd, `src/components/ui/${name}.btsx`), 'utf8'))
+        .toBe(await readFile(path.join(root, `packages/registry/ui/${name}.btsx`), 'utf8'))
+    }
+    // Variants import the base by relative path, which resolves because both install to paths.ui.
+    expect(await readFile(path.join(cwd, 'src/components/ui/button-ripple.btsx'), 'utf8')).toContain('from "./button.btsx"')
+  })
+
+  test('list groups variants under their base component', async () => {
+    const lines = formatCatalog((await fetchCatalog(await registryServer())).items)
+    const button = lines.findIndex((line) => line.startsWith('button '))
+    expect(lines[button + 1]).toStartWith('  button-ripple ')
+    expect(lines[button + 2]).toStartWith('  button-bouncy ')
+    expect(lines.filter((line) => line.startsWith('  '))).toHaveLength(2)
+  })
+
+  test('the CLI ignores registry fields it does not know', async () => {
+    const future = { ...item('utils'), categories: ['lib'], files: [{ ...item('utils').files[0], target: 'lib/utils.ts' }] }
+    const fetched = await fetchComponent(server(() => Response.json(future)), 'utils')
+    expect(fetched.name).toBe('utils')
+    expect(Object.keys(fetched)).not.toContain('categories')
+  })
+
+  test.each([
+    ['an unknown base', { registryDependencies: [], meta: { variantOf: 'ghost' } }, 'variant of unknown item ghost'],
+    ['a base missing from registryDependencies', { registryDependencies: [], meta: { variantOf: 'base' } }, 'must list its base base'],
+    ['a variant of a variant', { registryDependencies: ['middle'], meta: { variantOf: 'middle' } }, 'itself a variant'],
+    ['a non-UI base', { registryDependencies: ['helpers'], meta: { variantOf: 'helpers' } }, 'must both be registry:ui'],
+  ])('rejects %s', async (_label, leaf, message) => {
+    const cwd = await temp()
+    await mkdir(path.join(cwd, 'ui'))
+    await mkdir(path.join(cwd, 'lib'))
+    await writeFile(path.join(cwd, 'lib/helpers.ts'), 'export {}')
+    for (const name of ['base', 'middle', 'leaf']) await writeFile(path.join(cwd, `ui/${name}.btsx`), 'span')
+    const ui = (name: string, extra: object) => ({ name, type: 'registry:ui', files: [{ path: `ui/${name}.btsx`, type: 'registry:ui' }], ...extra })
+    const catalog = {
+      name: 'test', homepage: 'http://localhost', items: [
+        { name: 'helpers', type: 'registry:lib', files: [{ path: 'lib/helpers.ts', type: 'registry:lib' }] },
+        ui('base', {}),
+        ui('middle', { registryDependencies: ['base'], meta: { variantOf: 'base' } }),
+        ui('leaf', leaf),
+      ],
+    }
+    await writeFile(path.join(cwd, 'registry.json'), JSON.stringify(catalog))
+    await expect(buildRegistry(cwd, path.join(cwd, 'output'))).rejects.toThrow(message)
   })
 
   test('invalid catalogs do not replace a previous build', async () => {

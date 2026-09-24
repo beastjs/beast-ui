@@ -6,6 +6,11 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Added
 
+- `button-ripple` and `button-bouncy`, the first variants: separate items that
+  build on `button`, marked with `meta.variantOf`. `button-bouncy` depends on
+  `@octanejs/motion`. The registry build validates variants, `list` groups them
+  under their base, and the showcase nests them in the sidebar and links base
+  and variant pages.
 - `apps/web`: a component showcase built from the beastjs/dashboard template
   (Rsbuild, TanStack Router, resizable sidebar). Each registry component gets a
   page with a live preview, install command, and dependencies, all driven by
@@ -34,6 +39,9 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Changed
 
+- `@beastjs/cli` 0.2.0 ignores registry fields it does not recognize, so a newer
+  registry cannot break an older CLI. 0.1.0 validated registry payloads
+  strictly and rejects the `meta` field that variants add.
 - Octane 0.4.3 and beast-tsrx 0.3.2 across the workspace, with
   `@octanejs/base-ui` 0.1.55 and `@octanejs/motion` 0.1.54 for the registry
   components. Installed components now target Octane 0.4.

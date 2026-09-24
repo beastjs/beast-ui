@@ -1,4 +1,4 @@
-import { itemNameSchema, registryItemSchema, registrySchema, registryUrlSchema, type RegistryItem } from '@beast-ui/registry/schema'
+import { itemNameSchema, registryUrlSchema, remoteRegistryItemSchema, remoteRegistrySchema, type RegistryItem } from '@beast-ui/registry/schema'
 
 export class RegistryRequestError extends Error {
   constructor(readonly status: number, readonly url: string) {
@@ -27,14 +27,14 @@ export async function fetchComponent(registry: string, name: string): Promise<Re
     }
     throw error
   }
-  const item = registryItemSchema.parse(payload)
+  const item = remoteRegistryItemSchema.parse(payload)
   if (item.name !== name) throw new Error(`Expected registry item ${name}, received ${item.name}`)
   if (item.files.some((file) => file.content === undefined)) throw new Error(`Missing file content in registry item: ${name}`)
   return item
 }
 
 export async function fetchCatalog(registry: string) {
-  return registrySchema.parse(await fetchJson(registry, 'registry.json'))
+  return remoteRegistrySchema.parse(await fetchJson(registry, 'registry.json'))
 }
 
 export async function resolveItems(registry: string, names: string[]): Promise<RegistryItem[]> {

@@ -37,6 +37,15 @@ export async function buildRegistry(root: string, output: string): Promise<Regis
     visited.add(name)
   }
   registry.items.forEach((item) => visit(item.name))
+  for (const item of registry.items) {
+    const base = item.meta?.variantOf
+    if (base === undefined) continue
+    const target = items.get(base)
+    if (!target) throw new Error(`${item.name} is a variant of unknown item ${base}`)
+    if (item.type !== 'registry:ui' || target.type !== 'registry:ui') throw new Error(`${item.name} and ${base} must both be registry:ui items to form a variant`)
+    if (target.meta?.variantOf !== undefined) throw new Error(`${item.name} cannot be a variant of ${base}, which is itself a variant`)
+    if (!item.registryDependencies.includes(base)) throw new Error(`${item.name} must list its base ${base} in registryDependencies`)
+  }
   // Read and validate the entire catalog before replacing any published output.
   for (const item of registry.items) {
     for (const file of item.files) {

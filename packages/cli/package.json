@@ -1,6 +1,6 @@
 {
   "name": "@beastjs/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "description": "Copy Beast UI source components into a Beast + Octane project",
   "keywords": ["beast", "octane", "tsrx", "components", "registry", "shadcn", "cli"],

@@ -10,6 +10,8 @@ export interface CatalogItem {
   description: string
   dependencies: string[]
   registryDependencies: string[]
+  /** The base component this item is a variant of, when it is one. */
+  variantOf?: string
 }
 
 interface RegistryEntry {
@@ -19,6 +21,7 @@ interface RegistryEntry {
   description?: string
   dependencies?: string[]
   registryDependencies?: string[]
+  meta?: { variantOf?: string }
 }
 
 const entries: RegistryEntry[] = registry.items
@@ -32,11 +35,19 @@ export const components: CatalogItem[] = entries
     description: entry.description ?? '',
     dependencies: entry.dependencies ?? [],
     registryDependencies: entry.registryDependencies ?? [],
+    variantOf: entry.meta?.variantOf,
   }))
 
 export function findComponent(name: string | undefined): CatalogItem | undefined {
   return components.find((component) => component.name === name)
 }
+
+export const variantsOf = (name: string): CatalogItem[] => components.filter((component) => component.variantOf === name)
+
+/** Base components in catalog order, each followed by its variants. */
+export const componentTree: { item: CatalogItem; variants: CatalogItem[] }[] = components
+  .filter((component) => component.variantOf === undefined)
+  .map((item) => ({ item, variants: variantsOf(item.name) }))
 
 export const itemUrl = (name: string): string => `${REGISTRY_URL}/${name}.json`
 export const addCommand = (name: string): string => `${CLI} add ${name}`

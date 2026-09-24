@@ -1,0 +1,26 @@
+import { motion, useReducedMotion } from "@octanejs/motion";
+import type { Button as Primitive } from "@octanejs/base-ui/button";
+import type { VariantProps } from "class-variance-authority";
+import Button, { buttonVariants } from "./button.btsx";
+
+module
+  interface BounceOptions {
+    ~ hoverScale?: number;
+    ~ pressScale?: number;
+    ~ stiffness?: number;
+    ~ damping?: number;
+    ~ }
+  type ButtonBouncyProps = Primitive.Props & VariantProps<typeof buttonVariants> & BounceOptions;
+
+props { hoverScale = 1.05, pressScale = 0.9, stiffness = 520, damping = 14, ...props }: ButtonBouncyProps
+setup
+  const reduce = useReducedMotion();
+  const still = reduce || props.disabled;
+  const MotionSpan = motion.span;
+MotionSpan(
+  ~ className="inline-flex"
+  ~ whileHover={still ? undefined : { scale: hoverScale }}
+  ~ whileTap={still ? undefined : { scale: pressScale }}
+  ~ transition={{ type: "spring", stiffness, damping }}
+  ~ )
+  Button({...props})

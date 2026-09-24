@@ -1,5 +1,5 @@
 import type { IconName } from '@/lib/icons/types'
-import { components, REGISTRY_URL, REPOSITORY_URL } from '@/lib/catalog'
+import { componentTree, REGISTRY_URL, REPOSITORY_URL, type CatalogItem } from '@/lib/catalog'
 import { previews } from '@/previews'
 
 export type NavItem = {
@@ -7,6 +7,8 @@ export type NavItem = {
   icon: IconName
   label: string
   value: string | number
+  /** Drawn indented under the item before it, e.g. a component variant. */
+  nested?: boolean
 }
 
 export type NavGroup = {
@@ -16,6 +18,12 @@ export type NavGroup = {
 
 export const componentHref = (name: string): string => `/components/${name}`
 
+const componentNav = (component: CatalogItem): Omit<NavItem, 'value'> => ({
+  href: componentHref(component.name),
+  icon: previews[component.name]?.icon ?? 'folder',
+  label: component.title,
+})
+
 export const navGroups: NavGroup[] = [
   {
     title: 'Getting started',
@@ -23,12 +31,10 @@ export const navGroups: NavGroup[] = [
   },
   {
     title: 'Components',
-    items: components.map((component, index) => ({
-      href: componentHref(component.name),
-      icon: previews[component.name]?.icon ?? 'folder',
-      label: component.title,
-      value: String(index + 1).padStart(2, '0'),
-    })),
+    items: componentTree.flatMap(({ item, variants }, index) => [
+      { ...componentNav(item), value: String(index + 1).padStart(2, '0') },
+      ...variants.map((variant) => ({ ...componentNav(variant), value: '', nested: true })),
+    ]),
   },
   {
     title: 'Resources',
