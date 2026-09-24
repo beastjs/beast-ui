@@ -260,17 +260,13 @@ update `DEFAULT_REGISTRY` in `packages/cli/src/utils/config.ts`.
 
 ## Releasing the CLI
 
-`.github/workflows/publish-cli.yml` publishes `@beastjs/cli` to npm with
-provenance when a tag named `cli-v<version>` is pushed. The workflow fails
-unless the tag matches the `version` in `packages/cli/package.json`, and it
-runs `bun run check` before publishing. It needs an Actions secret `NPM_TOKEN`
-with publish access to the `@beastjs` scope.
-
-```bash
-# after bumping packages/cli/package.json to 0.1.0 and merging to main
-git tag cli-v0.1.0
-git push origin cli-v0.1.0
-```
+To release, raise `version` in `packages/cli/package.json` in a PR and merge it.
+`.github/workflows/publish-cli.yml` runs on merges to `main` that change that
+file. When the version is not yet on npm, it runs `bun run check`, publishes
+`@beastjs/cli` with provenance, and creates the `cli-v<version>` tag and GitHub
+release with generated notes. A version already on npm is skipped, so the
+workflow is safe to re-run from the Actions tab. It needs an Actions secret
+`NPM_TOKEN` with publish access to the `@beastjs` scope.
 
 ## Safety properties
 

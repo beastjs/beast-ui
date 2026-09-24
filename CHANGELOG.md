@@ -39,6 +39,9 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Changed
 
+- The CLI publishes itself: merging a version bump in
+  `packages/cli/package.json` to `main` publishes it to npm and creates the
+  `cli-v<version>` tag and release. Tags are no longer pushed by hand.
 - `@beastjs/cli` 0.3.0 redesigns its output: a file plan marking each file as
   created, replaced, or kept, npm dependencies one per line with their ranges,
   a spinner while packages install (their output appears only on failure), and
