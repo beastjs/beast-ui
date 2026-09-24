@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { assertContainedImports, buildRegistry } from '../scripts/build-registry.ts'
 import { addComponents, installDependencies, planFiles } from '../packages/cli/src/commands/add.ts'
-import { initConfig, readConfig } from '../packages/cli/src/utils/config.ts'
+import { DEFAULT_REGISTRY, initConfig, readConfig } from '../packages/cli/src/utils/config.ts'
 import { fetchComponent, resolveItems } from '../packages/cli/src/utils/registry.ts'
 import { registryItemSchema, type RegistryItem } from '@beast-ui/registry/schema'
 
@@ -185,6 +185,13 @@ describe('registry distribution', () => {
     await expect(installDependencies(cwd, 'pnpm', ['clsx@^2.1.1'])).rejects.toThrow('Could not run pnpm')
   })
 
+  test('init defaults to the hosted registry', async () => {
+    const cwd = await project()
+    expect((await initConfig(cwd, undefined, 'bun')).registry).toBe(DEFAULT_REGISTRY)
+    expect((await readConfig(cwd)).registry).toBe('https://beast-ui-registry.beastjs.workers.dev/r')
+    await expect(readConfig(await project())).rejects.toThrow('Missing beast-ui.json. Run init first.')
+  })
+
   test('init detects the package manager and preserves existing configuration', async () => {
     const cwd = await project()
     await writeFile(path.join(cwd, 'bun.lock'), '{}')
@@ -230,6 +237,8 @@ describe('published CLI', () => {
     await run('npm', ['install', '--offline', '--no-audit', '--no-fund', path.join(packs, tarball)], { cwd })
     const manifest = JSON.parse(await readFile(path.join(cwd, 'node_modules/@beast-ui/cli/package.json'), 'utf8'))
     expect(manifest.dependencies).toBeUndefined()
+    expect(manifest.license).toBe('MIT')
+    expect(await readFile(path.join(cwd, 'node_modules/@beast-ui/cli/LICENSE'), 'utf8')).toBe(await readFile(path.join(root, 'LICENSE'), 'utf8'))
     const cli = (args: string[]) => run('node', [path.join(cwd, 'node_modules/@beast-ui/cli/dist/index.js'), ...args], { cwd })
     expect((await cli(['--version'])).stdout.trim()).toBe(manifest.version)
     await cli(['init', '--registry', await registryServer(), '--package-manager', 'npm'])

@@ -1,6 +1,7 @@
 {
   "name": "@beast-ui/cli",
   "version": "0.0.0",
+  "license": "MIT",
   "description": "Copy Beast UI source components into a Beast + Octane project",
   "keywords": ["beast", "octane", "tsrx", "components", "registry", "shadcn", "cli"],
   "homepage": "https://github.com/beastjs/beast-ui#readme",
@@ -17,7 +18,7 @@
   "publishConfig": { "access": "public" },
   "scripts": {
     "build": "bun build src/index.ts --target node --outdir dist",
-    "prepack": "bun run build"
+    "prepack": "bun run build && cp ../../LICENSE LICENSE"
   },
   "devDependencies": {
     "@beast-ui/registry": "workspace:*",

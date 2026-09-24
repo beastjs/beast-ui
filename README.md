@@ -18,8 +18,9 @@ bun run check    # typecheck + test + build
 | `registry.json` | The catalog: one entry per item, with its files, npm dependencies, and registry dependencies. |
 | `packages/registry/` | The component sources themselves (`ui/`, `lib/`, `styles/`) plus the shared Zod schema and path helpers. |
 | `packages/cli/` | The `beast-ui` CLI: `init`, `list`, `add`. |
-| `apps/docs/` | The docs site, which also serves the built registry at `/r/*.json`. |
-| `scripts/build-registry.ts` | Compiles `registry.json` into `apps/docs/public/r/` payloads. |
+| `apps/docs/` | The docs site. In development it also serves the built registry at `/r/*.json`. |
+| `apps/registry/` | The Cloudflare Worker that serves the registry in production. |
+| `scripts/build-registry.ts` | Compiles `registry.json` into `apps/registry/public/r/` payloads. |
 | `tests/registry.test.ts` | End-to-end coverage of the build, the resolver, and the installer. |
 
 ## Adding a component to the registry
@@ -46,12 +47,20 @@ directory tree; use configured aliases when importing across destination roots.
 
 ## Consuming the registry
 
-Run these commands from the **beast-ui repository root**. The target must already
-be a Beast + Octane app with a `package.json`; `init` does not scaffold an app.
-The CLI is ready to publish as `@beast-ui/cli` but is not on npm yet, so for
-now it runs from this checkout.
+The hosted registry is at `https://beast-ui-registry.beastjs.workers.dev/r`, and
+the CLI uses it by default. The target must already be a Beast + Octane app with
+a `package.json`; `init` does not scaffold an app. The CLI is ready to publish as
+`@beast-ui/cli` but is not on npm yet, so for now run it from the **beast-ui
+repository root**:
 
-Start the registry in one terminal:
+```bash
+bun install
+bun run cli init --cwd ../my-app
+bun run cli add button --cwd ../my-app
+```
+
+To try registry changes before they are deployed, start a local registry in
+one terminal:
 
 ```bash
 bun install
@@ -103,7 +112,7 @@ components if your project uses different directories or aliases:
 
 ```json
 {
-  "registry": "http://127.0.0.1:5173/r",
+  "registry": "https://beast-ui-registry.beastjs.workers.dev/r",
   "paths": {
     "ui": "src/components/ui",
     "lib": "src/lib",
@@ -127,12 +136,13 @@ edit it directly to change settings.
 
 | Command or option | Behavior |
 | --- | --- |
-| `init --registry <url>` | Create configuration; registry URL must point to the directory containing the JSON items. |
+| `init` | Create configuration using the hosted registry. |
+| `init --registry <url>` | Use another registry; the URL must point to the directory containing the JSON items. |
 | `list` | Show available items from the configured registry. |
-| `list --registry <url>` | List items without needing a config. |
+| `list --registry <url>` | List items from another registry. Without a config, `list` uses the hosted registry. |
 | `add <items...>` | Copy one or more items and their registry dependencies; install their npm dependencies. |
 | `-c, --cwd <path>` | Select the target project; defaults to the current directory. |
-| `-r, --registry <url>` | Required for `init`; overrides the URL for a single `list` or `add` invocation. |
+| `-r, --registry <url>` | Sets the registry for `init`; overrides it for a single `list` or `add` invocation. |
 | `add --dry-run` | Fetch and validate items, then show changes without writing files or installing packages. |
 | `add --overwrite` | Allow replacement of differing existing source files. |
 | `add --skip-install` | Copy source only; print the npm dependencies to install yourself. |
@@ -141,8 +151,8 @@ edit it directly to change settings.
 Examples:
 
 ```bash
-# Browse a registry before initializing an app
-bun run cli list --registry http://127.0.0.1:5173/r
+# Browse the hosted registry before initializing an app
+bun run cli list
 
 # Add several items (shared dependencies are resolved once)
 bun run cli add utils theme --cwd ../my-app
@@ -167,6 +177,31 @@ If you prefer Node, build the CLI with `bun run --cwd packages/cli build`, then
 run `node /absolute/path/to/beast-ui/packages/cli/dist/index.js --help` from
 any directory. Node 22.22.2 or newer is required.
 
+## Deploying the registry
+
+The registry is static JSON served by a Cloudflare Worker with
+[static assets](https://developers.cloudflare.com/workers/static-assets/); no
+Worker script runs. `apps/registry/public/_headers` allows cross-origin reads
+and makes clients revalidate on every request, and `/` redirects to
+`/r/registry.json`.
+
+```bash
+bun run registry:dev      # build, then serve at http://127.0.0.1:8787/r
+bun run registry:deploy   # build, then deploy (needs a Cloudflare login)
+```
+
+`wrangler deploy` runs the registry build first (`build.command` in
+`apps/registry/wrangler.jsonc`), so every deploy ships the current items.
+
+CI deploys from `main` after the checks pass, once the repository has an
+Actions variable `CLOUDFLARE_ACCOUNT_ID` and a secret `CLOUDFLARE_API_TOKEN`
+(a token with the *Edit Cloudflare Workers* permission). Until both are set,
+the deploy job is skipped. Keep Cloudflare's Git integration (Workers Builds)
+disconnected for this Worker, so each change to `main` deploys only once. The Worker is served at
+`https://beast-ui-registry.beastjs.workers.dev`, the CLI's default registry. To
+use your own domain, add a `routes` entry to `apps/registry/wrangler.jsonc` and
+update `DEFAULT_REGISTRY` in `packages/cli/src/utils/config.ts`.
+
 ## Safety properties
 
 These are enforced by the schema and the path helpers, and covered by tests:
@@ -180,3 +215,5 @@ These are enforced by the schema and the path helpers, and covered by tests:
 - A failed catalog build leaves the previously published output untouched.
 
 Record changes in [CHANGELOG.md](CHANGELOG.md).
+
+beast-ui is released under the [MIT License](LICENSE).

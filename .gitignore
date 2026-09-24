@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .beast/
+.wrangler/
 *.tsbuildinfo
 .env
 .env.*
@@ -8,5 +9,8 @@ dist/
 .DS_Store
 
 # Generated registry payloads
-apps/docs/public/r/
+apps/registry/public/r/
 coverage/
+
+# Copied from the root LICENSE when the CLI is packed
+packages/cli/LICENSE
