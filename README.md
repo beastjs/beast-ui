@@ -186,18 +186,29 @@ and makes clients revalidate on every request, and `/` redirects to
 `/r/registry.json`.
 
 ```bash
-bun run registry:dev      # build, then serve at http://127.0.0.1:8787/r
-bun run registry:deploy   # build, then deploy (needs a Cloudflare login)
+bun run registry:dev       # build, then serve at http://127.0.0.1:8787/r
+bun run registry:deploy    # build, then deploy (needs a Cloudflare login)
+bun run registry:preview   # build, then upload a preview version
 ```
 
-`wrangler deploy` runs the registry build first (`build.command` in
-`apps/registry/wrangler.jsonc`), so every deploy ships the current items.
+Wrangler runs the registry build first (`build.command` in
+`apps/registry/wrangler.jsonc`), so every upload ships the current items.
 
-CI deploys from `main` after the checks pass, once the repository has an
-Actions variable `CLOUDFLARE_ACCOUNT_ID` and a secret `CLOUDFLARE_API_TOKEN`
-(a token with the *Edit Cloudflare Workers* permission). Until both are set,
-the deploy job is skipped. Keep Cloudflare's Git integration (Workers Builds)
-disconnected for this Worker, so each change to `main` deploys only once. The Worker is served at
+Cloudflare Workers Builds deploys the Worker from this repository: `main`
+deploys to production, and other branches upload preview versions with their
+own preview URLs. Configure the build under **Workers & Pages →
+beast-ui-registry → Settings → Build**:
+
+| Setting | Value |
+| --- | --- |
+| Root directory | `/` (the repository root, where `bun.lock` is) |
+| Build command | `bun install --frozen-lockfile` |
+| Deploy command | `bun run registry:deploy` |
+| Non-production branch deploy command | `bun run registry:preview` |
+| Build variable | `BUN_VERSION` = `1.4.0` (older Bun releases cannot read `bun.lock`) |
+
+The deploy commands run Wrangler from `apps/registry` with the version pinned
+in `bun.lock`. The Worker is served at
 `https://beast-ui-registry.beastjs.workers.dev`, the CLI's default registry. To
 use your own domain, add a `routes` entry to `apps/registry/wrangler.jsonc` and
 update `DEFAULT_REGISTRY` in `packages/cli/src/utils/config.ts`.

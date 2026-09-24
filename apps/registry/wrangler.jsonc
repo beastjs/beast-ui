@@ -12,7 +12,7 @@
     "not_found_handling": "none"
   },
   "workers_dev": true,
-  "preview_urls": false
+  "preview_urls": true
   // Serve from your own domain once it is on Cloudflare:
   // "routes": [{ "pattern": "registry.example.com", "custom_domain": true }]
 }
