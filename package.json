@@ -10,15 +10,16 @@
   },
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "dev": "bun run registry:build && bun run --cwd apps/docs dev",
-    "build": "bun run registry:build && bun run --cwd packages/cli build && bun run --cwd apps/docs build && bun run --cwd apps/registry validate",
+    "dev": "bun run --cwd apps/web dev",
+    "docs:dev": "bun run registry:build && bun run --cwd apps/docs dev",
+    "build": "bun run registry:build && bun run --cwd packages/cli build && bun run --cwd apps/docs build && bun run --cwd apps/web build && bun run --cwd apps/registry validate",
     "registry:build": "bun scripts/build-registry.ts",
     "registry:dev": "bun run --cwd apps/registry dev",
     "registry:deploy": "bun run --cwd apps/registry deploy",
     "registry:preview": "bun run --cwd apps/registry preview",
     "preview": "bun run --cwd apps/docs preview",
     "cli": "bun packages/cli/src/index.ts",
-    "typecheck": "tsc --noEmit && bun run --cwd packages/registry typecheck && bun run --cwd apps/docs typecheck",
+    "typecheck": "tsc --noEmit && bun run --cwd packages/registry typecheck && bun run --cwd apps/docs typecheck && bun run --cwd apps/web typecheck",
     "test": "bun test",
     "check": "bun run typecheck && bun run test && bun run build"
   },
@@ -26,13 +27,13 @@
     "@beast-ui/registry": "workspace:*",
     "@types/bun": "^1.3.14",
     "@types/node": "^26.2.0",
-    "@tsrx/typescript-plugin": "0.3.135",
-    "beast-tsrx": "0.2.62",
-    "octane": "0.2.13",
+    "@tsrx/typescript-plugin": "0.4.7",
+    "beast-tsrx": "0.3.2",
+    "octane": "0.4.3",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@octanejs/motion": "^0.1.53",
+    "@octanejs/motion": "^0.1.54",
     "bun": "^1.4.2"
   }
 }

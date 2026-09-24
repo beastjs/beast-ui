@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "plugins": [
+      {
+        "name": "@tsrx/typescript-plugin"
+      }
+    ]
+  },
+  "include": ["src", "rsbuild.config.ts", "../../packages/registry/ui"],
+  "tsrx": {
+    "compiler": "octane/compiler/volar"
+  }
+}

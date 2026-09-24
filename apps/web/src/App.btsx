@@ -1,0 +1,18 @@
+import { Suspense, lazy } from "octane";
+import ThemeProvider from "@/components/ThemeProvider.btsx";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+
+module
+  // Each viewport only downloads its own shell: resizable panels + tooltips on desktop, the drawer on mobile.
+  const DesktopLayout = lazy(() => import("@/layouts/DesktopLayout.btsx"))
+  const MobileLayout = lazy(() => import("@/layouts/MobileLayout.btsx"))
+
+props {}:{}
+setup
+  const isDesktop = useMediaQuery("(min-width: 48rem)")
+ThemeProvider
+  Suspense(fallback={null})
+    if isDesktop
+      DesktopLayout
+    else
+      MobileLayout

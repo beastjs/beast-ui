@@ -1,0 +1,48 @@
+import { Suspense } from "octane";
+import { Link, useParams } from "@octanejs/tanstack-router";
+import { addCommand, findComponent, itemUrl } from "@/lib/catalog";
+import { previews } from "@/previews";
+
+props {}:{}
+setup
+  const { name } = useParams({ strict: false })
+  const component = findComponent(name)
+  const Preview = component ? previews[component.name]?.component : undefined
+div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
+  if component
+    fragment
+      header(className="flex flex-wrap items-end justify-between gap-4")
+        div
+          p(className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground") Component
+          h1(className="mt-3 text-3xl font-medium tracking-tight") #{component.title}
+        a(href={itemUrl(component.name)} className="text-sm text-muted-foreground underline underline-offset-4" target="_blank" rel="noopener noreferrer") View source JSON ↗
+      p(className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground") #{component.description}
+      section(className="mt-8 flex min-h-56 items-center justify-center rounded-xl border border-border/40 bg-muted/30 p-8" aria-label={`${component.title} preview`})
+        if Preview
+          Suspense(fallback={null})
+            Preview
+        else
+          p(className="text-sm text-muted-foreground") No preview yet.
+      section(className="mt-10" aria-labelledby="install-title")
+        h2#install-title(className="text-lg font-medium tracking-tight") Installation
+        pre(className="mt-3 overflow-x-auto rounded-xl border border-border/40 bg-muted/50 p-5 font-mono text-xs leading-7")
+          code #{addCommand(component.name)}
+        if component.registryDependencies.length > 0
+          fragment
+            h3(className="mt-5 text-sm font-medium") Also installs
+            ul(className="mt-2 flex flex-wrap gap-1.5")
+              each dependency in component.registryDependencies key dependency
+                li
+                  code(className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs") #{dependency}
+        if component.dependencies.length > 0
+          fragment
+            h3(className="mt-5 text-sm font-medium") npm dependencies
+            ul(className="mt-2 flex flex-wrap gap-1.5")
+              each dependency in component.dependencies key dependency
+                li
+                  code(className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs") #{dependency}
+  else
+    fragment
+      h1(className="text-3xl font-medium tracking-tight") Component not found
+      p(className="mt-3 text-sm text-muted-foreground") #{`There is no component named “${name ?? ""}” in the registry.`}
+      Link(to="/" className="mt-6 inline-block text-sm underline underline-offset-4") Back to the introduction

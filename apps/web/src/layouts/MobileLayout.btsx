@@ -1,0 +1,16 @@
+import { useEffect, useState } from "octane";
+import { Outlet, useLocation } from "@octanejs/tanstack-router";
+import MobileSidebar from "@/components/MobileSidebar.btsx";
+import { SidebarNav } from "@/components/Sidebar.btsx";
+
+props {}:{}
+setup
+  const path = useLocation({ select: (location) => location.pathname })
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
+  useEffect(() => setMobileNavOpen(false), [path])
+fragment
+  MobileSidebar(open={mobileNavOpen} onOpenChange={setMobileNavOpen})
+    SidebarNav(path={path})
+  main(className='min-w-0')
+    Outlet
