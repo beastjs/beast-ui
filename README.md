@@ -190,6 +190,15 @@ bun run registry:dev      # build, then serve at http://127.0.0.1:8787/r
 bun run registry:deploy   # build, then deploy (needs a Cloudflare login)
 ```
 
+`wrangler deploy` runs the registry build first (`build.command` in
+`apps/registry/wrangler.jsonc`), so every deploy ships the current items.
+
+If the Worker is connected to this repository through Cloudflare Workers Builds,
+set its root directory to `apps/registry`, keep the deploy command
+`npx wrangler deploy`, and add the build variable `BUN_VERSION=1.4.0`; older Bun
+releases cannot read `bun.lock`. Use either Workers Builds or the CI job below
+to deploy, not both.
+
 CI deploys from `main` after the checks pass, once the repository has an
 Actions variable `CLOUDFLARE_ACCOUNT_ID` and a secret `CLOUDFLARE_API_TOKEN`
 (a token with the *Edit Cloudflare Workers* permission). Until both are set,
