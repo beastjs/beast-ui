@@ -1,0 +1,13 @@
+import { useState } from "octane";
+import ButtonBouncy from "@beast-ui/registry/ui/button-bouncy";
+
+props {}:{}
+setup
+  const [count, setCount] = useState(0)
+div(className="flex flex-col items-center gap-6")
+  div(className="flex flex-wrap items-center justify-center gap-4")
+    ButtonBouncy(onClick={() => setCount(count + 1)}) Press me
+    ButtonBouncy(variant="outline" hoverScale={1.1} pressScale={0.8} damping={8}) Extra bouncy
+    ButtonBouncy(variant="secondary" disabled={true}) Disabled
+  p(role="status" className="text-sm text-muted-foreground") #{count === 0 ? "Hover and press to feel the spring." : `Pressed ${count} ${count === 1 ? "time" : "times"}.`}
+  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") It accepts every Button prop, plus hoverScale, pressScale, stiffness, and damping. Reduced motion turns the spring off.

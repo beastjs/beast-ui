@@ -1,6 +1,6 @@
 import { Link } from "@octanejs/tanstack-router";
-import { CLI, components, REGISTRY_URL } from "../lib/catalog";
-import { componentHref } from "../lib/navs";
+import { CLI, componentTree, REGISTRY_URL } from "@/lib/catalog";
+import { componentHref } from "@/lib/navs";
 
 module
   const setupCommands = [
@@ -24,10 +24,12 @@ div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
   section(className="mt-12" aria-labelledby="catalog-title")
     h2#catalog-title(className="text-xl font-medium tracking-tight") Components
     div(className="mt-4 grid gap-3 sm:grid-cols-2")
-      each component in components key component.name
-        Link(to={componentHref(component.name)} className="rounded-xl border border-border/40 p-5 transition-colors hover:bg-muted/60")
-          h3(className="font-medium") #{component.title}
-          p(className="mt-2 text-sm leading-relaxed text-muted-foreground") #{component.description}
+      each entry in componentTree key entry.item.name
+        Link(to={componentHref(entry.item.name)} className="rounded-xl border border-border/40 p-5 transition-colors hover:bg-muted/60")
+          h3(className="font-medium") #{entry.item.title}
+          p(className="mt-2 text-sm leading-relaxed text-muted-foreground") #{entry.item.description}
+          if entry.variants.length > 0
+            p(className="mt-3 font-mono text-xs text-muted-foreground") #{`${entry.variants.length} ${entry.variants.length === 1 ? "variant" : "variants"}`}
     p(className="mt-6 text-xs text-muted-foreground")
       | #{"Every item is also available as JSON at "}
       a(href={`${REGISTRY_URL}/registry.json`} className="underline underline-offset-4") #{`${REGISTRY_URL}/registry.json`}

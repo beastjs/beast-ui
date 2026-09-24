@@ -1,0 +1,58 @@
+import { useRef } from "octane";
+import type { Button as Primitive } from "@octanejs/base-ui/button";
+import type { VariantProps } from "class-variance-authority";
+import Button, { buttonVariants } from "./button.btsx";
+import { cn } from "@/lib/utils";
+
+module
+  interface RippleOptions {
+    ~ rippleColor?: string;
+    ~ rippleOpacity?: number;
+    ~ rippleDuration?: number;
+    ~ }
+  type ButtonRippleProps = Primitive.Props & VariantProps<typeof buttonVariants> & RippleOptions;
+  type PressEvent = Parameters<NonNullable<Primitive.Props["onPointerDown"]>>[0];
+  const reduceMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+props { className, rippleColor = "currentColor", rippleOpacity = 0.25, rippleDuration = 550, onPointerDown, children, ...props }: ButtonRippleProps
+setup
+  const layerRef = useRef<HTMLSpanElement | null>(null);
+  // Ripples are drawn into a layer the renderer never updates, then removed when they finish.
+  const spawn = (event: PressEvent) => {
+    const layer = layerRef.current;
+    if (!layer || props.disabled || reduceMotion()) return;
+    const rect = layer.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const radius = Math.hypot(Math.max(x, rect.width - x), Math.max(y, rect.height - y));
+    const ripple = document.createElement("span");
+    Object.assign(ripple.style, {
+      position: "absolute",
+      left: `${x - radius}px`,
+      top: `${y - radius}px`,
+      width: `${radius * 2}px`,
+      height: `${radius * 2}px`,
+      borderRadius: "9999px",
+      background: rippleColor,
+      pointerEvents: "none",
+    });
+    layer.append(ripple);
+    ripple.animate(
+      [
+        { transform: "scale(0)", opacity: rippleOpacity },
+        { transform: "scale(1)", opacity: 0 },
+      ],
+      { duration: rippleDuration, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+    ).finished.finally(() => ripple.remove());
+  };
+  const handlePointerDown = (event: PressEvent) => {
+    onPointerDown?.(event);
+    if (!event.defaultPrevented) spawn(event);
+  };
+Button(
+  ~ {...props}
+  ~ className={(state: Primitive.State) => cn("relative overflow-hidden", typeof className === "function" ? className(state) : className)}
+  ~ onPointerDown={handlePointerDown}
+  ~ )
+  span(ref={layerRef} aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]")
+  | #{children}

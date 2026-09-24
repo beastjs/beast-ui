@@ -17,6 +17,7 @@ module
     value: string | number
     path?: string
     isCompact?: boolean
+    nested?: boolean
     // onNavigate: (to: string) => (event: MouseEvent) => void
   }
 
@@ -31,15 +32,16 @@ module
   const SIDEBAR_VALUE_CLASS = "ml-auto shrink-0 text-right font-mono text-2xs leading-none tabular-nums text-muted-foreground"
   const SIDEBAR_SELECTED_TEXT_CLASS = "text-primary"
   const SIDEBAR_ITEM_COMPACT_CLASS = "justify-center gap-0 p-1"
+  const SIDEBAR_ITEM_NESTED_CLASS = "ml-5 w-[calc(100%-1.25rem)] py-0.5 [&_span]:text-[13px]"
 
   export { SidebarNav }
 
 component SidebarItem
-  props { href, icon, label, path, isCompact = false }: SidebarItemProps
+  props { href, icon, label, path, isCompact = false, nested = false }: SidebarItemProps
   setup
     const isExternal = href.startsWith("http")
     const isSelected = path === href
-    const itemClassName = cn(SIDEBAR_ITEM_CLASS, isSelected ? SIDEBAR_ITEM_SELECTED_CLASS : SIDEBAR_ITEM_DEFAULT_CLASS, isCompact && SIDEBAR_ITEM_COMPACT_CLASS)
+    const itemClassName = cn(SIDEBAR_ITEM_CLASS, isSelected ? SIDEBAR_ITEM_SELECTED_CLASS : SIDEBAR_ITEM_DEFAULT_CLASS, isCompact ? SIDEBAR_ITEM_COMPACT_CLASS : nested && SIDEBAR_ITEM_NESTED_CLASS)
     const labelClassName = cn(SIDEBAR_LABEL_CLASS, isSelected && SIDEBAR_SELECTED_TEXT_CLASS)
     const iconClassName = cn(SIDEBAR_ICON_CLASS, isSelected && SIDEBAR_SELECTED_TEXT_CLASS)
     const iconContainerClassName = isSelected ? cn(SIDEBAR_ICON_SELECTED_CONTAINER_CLASS, isCompact && "bg-transparent dark:bg-transparent shadow-none") : SIDEBAR_ICON_CONTAINER_CLASS

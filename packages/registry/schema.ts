@@ -13,12 +13,12 @@ export const registryUrlSchema = z.url().refine((value) => {
 const itemTypeSchema = z.enum(['registry:ui', 'registry:lib', 'registry:style'])
 // Support npm package names with optional semver ranges, never CLI flags or URLs.
 const dependencySchema = z.string().regex(/^(?:@[a-z0-9._-]+\/)?[a-z0-9][a-z0-9._-]*(?:@[~^<>=0-9a-zA-Z.*|+ -]+)?$/)
-export const registryFileSchema = z.object({
+const fileShape = {
   path: relativePathSchema,
   type: itemTypeSchema,
   content: z.string().optional(),
-}).strict()
-export const registryItemSchema = z.object({
+}
+const itemShape = {
   $schema: z.string().optional(),
   name: itemNameSchema,
   type: itemTypeSchema,
@@ -26,14 +26,28 @@ export const registryItemSchema = z.object({
   description: z.string().optional(),
   dependencies: z.array(dependencySchema).default([]),
   registryDependencies: z.array(itemNameSchema).default([]),
-  files: z.array(registryFileSchema).min(1),
-}).strict()
-export const registrySchema = z.object({
+}
+const registryShape = {
   $schema: z.string().optional(),
   name: itemNameSchema,
   homepage: z.url(),
-  items: z.array(registryItemSchema).min(1),
+}
+// The catalog source is strict so typos fail the build.
+export const registryFileSchema = z.object(fileShape).strict()
+export const registryItemSchema = z.object({
+  ...itemShape,
+  files: z.array(registryFileSchema).min(1),
+  // Optional metadata; `variantOf` names the base component a variant builds on.
+  meta: z.object({ variantOf: itemNameSchema.optional() }).strict().optional(),
 }).strict()
+export const registrySchema = z.object({ ...registryShape, items: z.array(registryItemSchema).min(1) }).strict()
+// Fetched payloads drop unknown fields instead, so a newer registry never breaks an older CLI.
+export const remoteRegistryItemSchema = z.object({
+  ...itemShape,
+  files: z.array(z.object(fileShape)).min(1),
+  meta: z.object({ variantOf: itemNameSchema.optional() }).optional(),
+})
+export const remoteRegistrySchema = z.object({ ...registryShape, items: z.array(remoteRegistryItemSchema).min(1) })
 export const configSchema = z.object({
   registry: registryUrlSchema,
   paths: z.object({ ui: relativePathSchema, lib: relativePathSchema, styles: relativePathSchema }).strict(),

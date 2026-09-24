@@ -1,6 +1,7 @@
 import { Suspense } from "octane";
 import { Link, useParams } from "@octanejs/tanstack-router";
-import { addCommand, findComponent, itemUrl } from "@/lib/catalog";
+import { addCommand, findComponent, itemUrl, variantsOf } from "@/lib/catalog";
+import { componentHref } from "@/lib/navs";
 import { previews } from "@/previews";
 
 props {}:{}
@@ -8,12 +9,19 @@ setup
   const { name } = useParams({ strict: false })
   const component = findComponent(name)
   const Preview = component ? previews[component.name]?.component : undefined
+  const base = component?.variantOf ? findComponent(component.variantOf) : undefined
+  const variants = component ? variantsOf(component.name) : []
 div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
   if component
     fragment
       header(className="flex flex-wrap items-end justify-between gap-4")
         div
-          p(className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground") Component
+          if base
+            p(className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground")
+              | #{"Variant of "}
+              Link(to={componentHref(base.name)} className="underline underline-offset-4") #{base.title}
+          else
+            p(className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground") Component
           h1(className="mt-3 text-3xl font-medium tracking-tight") #{component.title}
         a(href={itemUrl(component.name)} className="text-sm text-muted-foreground underline underline-offset-4" target="_blank" rel="noopener noreferrer") View source JSON ↗
       p(className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground") #{component.description}
@@ -23,6 +31,15 @@ div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
             Preview
         else
           p(className="text-sm text-muted-foreground") No preview yet.
+      if variants.length > 0
+        section(className="mt-10" aria-labelledby="variants-title")
+          h2#variants-title(className="text-lg font-medium tracking-tight") Variants
+          p(className="mt-2 text-sm text-muted-foreground") #{`Built on ${component.title}. Installing a variant also installs ${component.title}.`}
+          div(className="mt-4 grid gap-3 sm:grid-cols-2")
+            each variant in variants key variant.name
+              Link(to={componentHref(variant.name)} className="rounded-xl border border-border/40 p-4 transition-colors hover:bg-muted/60")
+                h3(className="text-sm font-medium") #{variant.title}
+                p(className="mt-1.5 text-sm leading-relaxed text-muted-foreground") #{variant.description}
       section(className="mt-10" aria-labelledby="install-title")
         h2#install-title(className="text-lg font-medium tracking-tight") Installation
         pre(className="mt-3 overflow-x-auto rounded-xl border border-border/40 bg-muted/50 p-5 font-mono text-xs leading-7")
