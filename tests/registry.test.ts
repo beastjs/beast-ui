@@ -61,7 +61,7 @@ describe('registry distribution', () => {
     const cwd = await project()
     await initConfig(cwd, await registryServer(), 'bun')
     const result = await addComponents(['scrubfield', 'squishy'], { cwd, skipInstall: true })
-    expect(result.dependencies).toEqual(['@octanejs/motion@^0.1.53'])
+    expect(result.dependencies).toEqual(['@octanejs/motion@^0.1.54'])
     for (const name of ['scrubfield', 'squishy']) {
       expect(await readFile(path.join(cwd, `src/components/ui/${name}.btsx`), 'utf8'))
         .toBe(await readFile(path.join(root, `packages/registry/ui/${name}.btsx`), 'utf8'))
@@ -89,7 +89,7 @@ describe('registry distribution', () => {
     expect(dry.files).toHaveLength(3)
     expect((await readdir(cwd)).sort()).toEqual(['beast-ui.json', 'package.json'])
     const result = await addComponents(['button'], options)
-    expect(result.dependencies).toContain('@octanejs/base-ui@0.1.53')
+    expect(result.dependencies).toContain('@octanejs/base-ui@0.1.55')
     expect(result.dependencies).toContain('clsx@^2.1.1')
     expect(await readFile(path.join(cwd, 'src/components/ui/button.btsx'), 'utf8')).toContain('from "~/shared/utils"')
     expect(await readFile(path.join(cwd, 'src/styles/theme.css'), 'utf8')).toContain('@theme inline')
@@ -214,6 +214,15 @@ describe('registry distribution', () => {
     const leak = { name: 'test', homepage: 'http://localhost', items: [{ name: 'leak', type: 'registry:ui', files: [{ path: 'ui/leak.btsx', type: 'registry:ui' }] }] }
     await writeFile(path.join(cwd, 'registry.json'), JSON.stringify(leak))
     await expect(buildRegistry(cwd, path.join(cwd, 'output'))).rejects.toThrow('leaves the ui install root')
+  })
+
+  test('the showcase has a preview for every UI component', async () => {
+    const catalog = JSON.parse(await readFile(path.join(root, 'registry.json'), 'utf8')) as { items: { name: string; type: string }[] }
+    const previews = await readFile(path.join(root, 'apps/web/src/previews/index.ts'), 'utf8')
+    for (const { name } of catalog.items.filter((item) => item.type === 'registry:ui')) {
+      expect(await Bun.file(path.join(root, `apps/web/src/previews/${name}-preview.btsx`)).exists()).toBe(true)
+      expect(previews).toContain(`import('./${name}-preview.btsx')`)
+    }
   })
 
   test('invalid catalogs do not replace a previous build', async () => {

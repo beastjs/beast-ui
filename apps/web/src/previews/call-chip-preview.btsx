@@ -1,0 +1,15 @@
+import { useState } from "octane";
+import Button from "@beast-ui/registry/ui/button";
+import CallChip from "@beast-ui/registry/ui/call-chip";
+
+props {}:{}
+setup
+  const [status, setStatus] = useState<"idle" | "running" | "done" | "error">("idle")
+div(className="flex flex-col items-center gap-6")
+  CallChip(name="Search" argument="components" icon="search" status={status} onRetry={() => setStatus("running")})
+  div(className="flex flex-wrap justify-center gap-3")
+    Button(size="sm" onClick={() => setStatus("running")} disabled={status === "running"}) Start
+    Button(size="sm" variant="outline" onClick={() => setStatus("done")} disabled={status !== "running"}) Complete
+    Button(size="sm" variant="outline" onClick={() => setStatus("error")} disabled={status !== "running"}) Fail
+    Button(size="sm" variant="ghost" onClick={() => setStatus("idle")}) Reset
+  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Start the example, then complete or fail it. Click a failed chip, or focus it and press Enter or Space, to retry.

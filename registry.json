@@ -37,7 +37,7 @@
       "title": "Button",
       "description": "An accessible Beast button with six variants and eight sizes.",
       "dependencies": [
-        "@octanejs/base-ui@0.1.53",
+        "@octanejs/base-ui@0.1.55",
         "class-variance-authority@^0.7.1"
       ],
       "registryDependencies": [
@@ -57,7 +57,7 @@
       "title": "Scrub Field",
       "description": "A numeric field with drag scrubbing, keyboard controls, and animated bounds.",
       "dependencies": [
-        "@octanejs/motion@^0.1.53"
+        "@octanejs/motion@^0.1.54"
       ],
       "files": [
         {
@@ -72,7 +72,7 @@
       "title": "Squishy Switch",
       "description": "An animated switch with a draggable, elastic thumb.",
       "dependencies": [
-        "@octanejs/motion@^0.1.53"
+        "@octanejs/motion@^0.1.54"
       ],
       "files": [
         {

@@ -16,14 +16,14 @@
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.3.5",
-    "@octanejs/base-ui": "0.1.53",
-    "@octanejs/motion": "^0.1.53",
+    "@octanejs/base-ui": "0.1.55",
+    "@octanejs/motion": "^0.1.54",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.0.0"
   },
   "peerDependencies": {
-    "octane": "0.2.13"
+    "octane": "0.4.3"
   }
 }

@@ -6,6 +6,12 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Added
 
+- `apps/web`: a component showcase built from the beastjs/dashboard template
+  (Rsbuild, TanStack Router, resizable sidebar). Each registry component gets a
+  page with a live preview, install command, and dependencies, all driven by
+  `registry.json`.
+  It deploys to its own Cloudflare Worker, `beast-ui-web`, with client-side
+  routes served on reload.
 - MIT license.
 - `apps/registry`: a Cloudflare Worker that serves the built registry, with
   CORS and revalidation headers. Cloudflare Workers Builds deploys it from
@@ -26,6 +32,11 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Changed
 
+- Octane 0.4.3 and beast-tsrx 0.3.2 across the workspace, with
+  `@octanejs/base-ui` 0.1.55 and `@octanejs/motion` 0.1.54 for the registry
+  components. Installed components now target Octane 0.4.
+- `bun run dev` starts the showcase; the previous docs site runs with
+  `bun run docs:dev`, and the local registry with `bun run registry:dev`.
 - The registry now builds to `apps/registry/public/r/`. The docs dev server and
   build still serve it at `/r`, and return 404 for unknown items instead of the
   page fallback.

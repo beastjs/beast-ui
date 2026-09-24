@@ -7,7 +7,7 @@ into your project, where you own and edit it.
 
 ```bash
 bun install
-bun run dev      # builds the registry, serves the docs at http://127.0.0.1:5173
+bun run dev      # serves the component showcase at http://127.0.0.1:3000
 bun run check    # typecheck + test + build
 ```
 
@@ -18,7 +18,8 @@ bun run check    # typecheck + test + build
 | `registry.json` | The catalog: one entry per item, with its files, npm dependencies, and registry dependencies. |
 | `packages/registry/` | The component sources themselves (`ui/`, `lib/`, `styles/`) plus the shared Zod schema and path helpers. |
 | `packages/cli/` | The `beast-ui` CLI: `init`, `list`, `add`. |
-| `apps/docs/` | The docs site. In development it also serves the built registry at `/r/*.json`. |
+| `apps/web/` | The component showcase: live previews of every registry component, built with Rsbuild. |
+| `apps/docs/` | The docs site, to become the markdown documentation. In development it also serves the built registry at `/r/*.json`. |
 | `apps/registry/` | The Cloudflare Worker that serves the registry in production. |
 | `scripts/build-registry.ts` | Compiles `registry.json` into `apps/registry/public/r/` payloads. |
 | `tests/registry.test.ts` | End-to-end coverage of the build, the resolver, and the installer. |
@@ -64,14 +65,14 @@ one terminal:
 
 ```bash
 bun install
-bun run dev
+bun run registry:dev
 ```
 
 In a second terminal, also at the beast-ui repository root, initialize and install
 into your app (replace `../my-app` with its relative or absolute path):
 
 ```bash
-bun run cli init --cwd ../my-app --registry http://127.0.0.1:5173/r
+bun run cli init --cwd ../my-app --registry http://127.0.0.1:8787/r
 bun run cli list --cwd ../my-app
 bun run cli add button --cwd ../my-app --dry-run
 bun run cli add button --cwd ../my-app
@@ -82,7 +83,8 @@ package manager, detected from the lockfile). `add` resolves the full dependency
 closure, plans every file before writing any of them, and refuses to clobber a
 modified file without `--overwrite`.
 
-The consuming project needs Tailwind CSS v4, a `@/*` alias resolving to `src/*`
+The consuming project needs Octane 0.4 (the components' `@octanejs/*`
+dependencies require it), Tailwind CSS v4, a `@/*` alias resolving to `src/*`
 in both TypeScript and the bundler, and `src/styles/theme.css` imported after
 `@import "tailwindcss"`.
 
@@ -176,6 +178,29 @@ Package installation still runs on repeated adds unless `--skip-install` is set.
 If you prefer Node, build the CLI with `bun run --cwd packages/cli build`, then
 run `node /absolute/path/to/beast-ui/packages/cli/dist/index.js --help` from
 any directory. Node 22.22.2 or newer is required.
+
+## Component showcase
+
+`apps/web` renders every `registry:ui` item from `registry.json` at
+`/components/<name>`, with navigation built from the same catalog. When you add
+a component, add its preview as `apps/web/src/previews/<name>-preview.btsx` and
+register it in `apps/web/src/previews/index.ts`; a test fails until both exist.
+Preview files end in `-preview` because Beast names a file's component after
+the file, and a preview named `button.btsx` would shadow the `Button` it imports.
+
+### Deploying the showcase
+
+The showcase is a single-page app served by its own Cloudflare Worker,
+`beast-ui-web`, from `apps/web/dist` (see `apps/web/wrangler.jsonc`). Unknown
+paths serve `index.html`, so routes such as `/components/button` survive a
+reload, and hashed files under `/static/` are cached as immutable. Wrangler runs
+the web build before every upload. Create the Worker in Workers Builds with the
+same settings as the registry, using these commands:
+
+| Setting | Value |
+| --- | --- |
+| Deploy command | `bun run web:deploy` |
+| Non-production branch deploy command | `bun run web:preview` |
 
 ## Deploying the registry
 

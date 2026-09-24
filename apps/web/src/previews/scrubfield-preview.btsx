@@ -1,0 +1,29 @@
+import { useState } from "octane";
+import ScrubField from "@beast-ui/registry/ui/scrubfield";
+
+props {}:{}
+setup
+  const [opacity, setOpacity] = useState(50)
+div(className="flex flex-col items-center gap-6")
+  div(className="flex flex-wrap items-center justify-center gap-6")
+    ScrubField(label="Opacity" suffix="%" value={opacity} onChange={setOpacity} chipColor="var(--muted)" accent="var(--border)")
+    ScrubField(label="Disabled" defaultValue={25} disabled={true} chipColor="var(--border)")
+    ScrubField(
+      ~ label="Radius"
+      ~ suffix="px"
+      ~ defaultValue={25}
+      ~ step={1}
+      ~ size="lg"
+      ~ sensitivity={2}
+      ~ rubberReach={6}
+      ~ returnDuration={300}
+      ~ coarseMultiplier={10}
+      ~ fineMultiplier={0.1}
+      ~ showDelta
+      ~ showDirty={false}
+      ~ showFill
+      ~ accent="var(--muted-foreground)"
+      ~ chipColor="var(--muted)"
+      ~ )
+  p(role="status" className="text-sm text-muted-foreground") #{`Opacity: ${opacity}%`}
+  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Drag to adjust, or click the value to type. Arrow keys make small changes, Shift makes larger steps, and Alt makes fine adjustments.
