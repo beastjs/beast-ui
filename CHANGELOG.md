@@ -6,6 +6,13 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Added
 
+- `bun run registry:import`: an interactive importer for components dropped
+  into `staging/`. It walks the directory one file at a time, dependencies
+  first. For each file it maps imports to registry and npm dependencies, fixes
+  paths that would break once installed, and prompts for the catalog details.
+  It then writes the source, the `registry.json` entry, any new packages, and
+  a registered starter preview, and deletes the staged file. At the end it
+  rebuilds and validates the registry.
 - `button-ripple` and `button-bouncy`, the first variants: separate items that
   build on `button`, marked with `meta.variantOf`. `button-bouncy` depends on
   `@octanejs/motion`. The registry build validates variants, `list` groups them

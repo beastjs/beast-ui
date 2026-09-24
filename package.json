@@ -14,6 +14,7 @@
     "docs:dev": "bun run registry:build && bun run --cwd apps/docs dev",
     "build": "bun run registry:build && bun run --cwd packages/cli build && bun run --cwd apps/docs build && bun run --cwd apps/web validate && bun run --cwd apps/registry validate",
     "registry:build": "bun scripts/build-registry.ts",
+    "registry:import": "bun scripts/registry-import/index.ts",
     "registry:dev": "bun run --cwd apps/registry dev",
     "registry:deploy": "bun run --cwd apps/registry deploy",
     "registry:preview": "bun run --cwd apps/registry preview",

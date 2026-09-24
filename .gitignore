@@ -14,3 +14,6 @@ coverage/
 
 # Copied from the root LICENSE when the CLI is packed
 packages/cli/LICENSE
+
+# Components waiting for `bun run registry:import`
+/staging/

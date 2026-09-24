@@ -22,9 +22,43 @@ bun run check    # typecheck + test + build
 | `apps/docs/` | The docs site, to become the markdown documentation. In development it also serves the built registry at `/r/*.json`. |
 | `apps/registry/` | The Cloudflare Worker that serves the registry in production. |
 | `scripts/build-registry.ts` | Compiles `registry.json` into `apps/registry/public/r/` payloads. |
+| `scripts/registry-import/` | `bun run registry:import`: wires staged components into the registry and showcase. |
 | `tests/registry.test.ts` | End-to-end coverage of the build, the resolver, and the installer. |
 
 ## Adding a component to the registry
+
+### From a staging directory
+
+Drop finished `.btsx` files into `staging/` at the repository root (it is
+git-ignored) and run:
+
+```bash
+bun run registry:import            # or: bun run registry:import path/to/dir
+```
+
+The importer walks the directory one component at a time, dependencies first,
+until no `.btsx` files are left. For each file it:
+
+- lists the imports and what each one maps to: `octane` (the runtime), `utils`,
+  another registry component, an npm package, or a path that cannot resolve in
+  a user's project, which it asks you to confirm;
+- rewrites paths that would break once installed: `../lib/utils` becomes
+  `@/lib/utils`, and `@/components/ui/button` becomes `./button.btsx`;
+- prompts for the name, title, description, base component (for a variant),
+  registry dependencies, npm dependencies, and showcase icon, pre-filled from
+  the file name and imports. Ranges for npm packages come from the workspace's
+  `package.json` files, or from npm for new packages;
+- shows the plan and writes it on `y`: the source in `packages/registry/ui/`,
+  the `registry.json` entry, missing packages in
+  `packages/registry/package.json`, and a starter preview registered in
+  `apps/web/src/previews/index.ts`. The staged file is then deleted. Answer `s`
+  to leave a file for later, or `q` to stop.
+
+Afterwards it runs `bun install` if packages were added, then rebuilds and
+validates the registry. Fill in each starter preview, check it with
+`bun run dev`, and run `bun run check`.
+
+### By hand
 
 1. Write the source under `packages/registry/ui/`, `lib/`, or `styles/`. UI files
    are `.btsx`, lib files are `.ts`, style files are `.css` — the installer
