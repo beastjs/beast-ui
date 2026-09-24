@@ -40,7 +40,7 @@
       "bin": {
         "beast-ui": "./dist/index.js",
       },
-      "dependencies": {
+      "devDependencies": {
         "@beast-ui/registry": "workspace:*",
         "commander": "^15.0.0",
       },

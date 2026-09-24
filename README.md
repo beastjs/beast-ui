@@ -48,7 +48,8 @@ directory tree; use configured aliases when importing across destination roots.
 
 Run these commands from the **beast-ui repository root**. The target must already
 be a Beast + Octane app with a `package.json`; `init` does not scaffold an app.
-The CLI is currently private and runs from this checkout.
+The CLI is ready to publish as `@beast-ui/cli` but is not on npm yet, so for
+now it runs from this checkout.
 
 Start the registry in one terminal:
 

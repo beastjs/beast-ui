@@ -1,17 +1,33 @@
 import { itemNameSchema, registryItemSchema, registrySchema, registryUrlSchema, type RegistryItem } from '@beast-ui/registry/schema'
 
+export class RegistryRequestError extends Error {
+  constructor(readonly status: number, readonly url: string) {
+    super(`Registry request failed (${status}): ${url}`)
+  }
+}
+
 export async function fetchJson(registry: string, filename: string): Promise<unknown> {
   registryUrlSchema.parse(registry)
   const url = `${registry.replace(/\/$/, '')}/${filename}`
-  const response = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-  if (!response.ok) throw new Error(`Registry request failed (${response.status}): ${url}`)
+  let response: Response
+  try { response = await fetch(url, { signal: AbortSignal.timeout(15_000) }) }
+  catch (error) { throw new Error(`Could not reach the registry at ${url}: ${error instanceof Error ? error.message : String(error)}`) }
+  if (!response.ok) throw new RegistryRequestError(response.status, url)
   try { return await response.json() }
   catch { throw new Error(`Registry did not return JSON: ${url}`) }
 }
 
 export async function fetchComponent(registry: string, name: string): Promise<RegistryItem> {
   itemNameSchema.parse(name)
-  const item = registryItemSchema.parse(await fetchJson(registry, `${name}.json`))
+  let payload: unknown
+  try { payload = await fetchJson(registry, `${name}.json`) }
+  catch (error) {
+    if (error instanceof RegistryRequestError && error.status === 404) {
+      throw new Error(`Unknown registry item: ${name}. Run list to see available items. (${error.url})`)
+    }
+    throw error
+  }
+  const item = registryItemSchema.parse(payload)
   if (item.name !== name) throw new Error(`Expected registry item ${name}, received ${item.name}`)
   if (item.files.some((file) => file.content === undefined)) throw new Error(`Missing file content in registry item: ${name}`)
   return item
