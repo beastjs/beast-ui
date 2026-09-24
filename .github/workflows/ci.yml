@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -31,29 +31,3 @@ jobs:
       - name: Check
         run: bun run check
 
-  deploy-registry:
-    name: Deploy registry to Cloudflare
-    needs: check
-    # Runs once the repository variable CLOUDFLARE_ACCOUNT_ID and the secret
-    # CLOUDFLARE_API_TOKEN are configured; until then it is skipped.
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.CLOUDFLARE_ACCOUNT_ID != ''
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    concurrency:
-      group: deploy-registry
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.0
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Deploy
-        run: bun run registry:deploy
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

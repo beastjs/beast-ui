@@ -8,8 +8,8 @@ All notable changes to `beast-ui` will be recorded here.
 
 - MIT license.
 - `apps/registry`: a Cloudflare Worker that serves the built registry, with
-  CORS and revalidation headers, and a CI job that deploys it from `main` once
-  Cloudflare credentials are configured. `wrangler deploy` builds the registry
+  CORS and revalidation headers. Cloudflare Workers Builds deploys it from
+  `main` and uploads preview versions for other branches. `wrangler deploy` builds the registry
   first, so a deploy from a fresh checkout never ships an empty registry.
 - The CLI defaults to the hosted registry at
   `https://beast-ui-registry.beastjs.workers.dev/r`: `init` no longer requires
