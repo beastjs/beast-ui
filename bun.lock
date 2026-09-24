@@ -62,8 +62,8 @@
       },
     },
     "packages/cli": {
-      "name": "@beast-ui/cli",
-      "version": "0.0.0",
+      "name": "@beastjs/cli",
+      "version": "0.1.0",
       "bin": {
         "beast-ui": "./dist/index.js",
       },
@@ -92,8 +92,6 @@
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.3.0", "", {}, "sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA=="],
 
-    "@beast-ui/cli": ["@beast-ui/cli@workspace:packages/cli"],
-
     "@beast-ui/docs": ["@beast-ui/docs@workspace:apps/docs"],
 
     "@beast-ui/registry": ["@beast-ui/registry@workspace:packages/registry"],
@@ -101,6 +99,8 @@
     "@beast-ui/registry-worker": ["@beast-ui/registry-worker@workspace:apps/registry"],
 
     "@beast-ui/web": ["@beast-ui/web@workspace:apps/web"],
+
+    "@beastjs/cli": ["@beastjs/cli@workspace:packages/cli"],
 
     "@cloudflare/kv-asset-handler": ["@cloudflare/kv-asset-handler@0.5.0", "", {}, "sha512-jxQYkj8dSIzc0cD6cMMNdOc1UVjqSqu8BZdor5s8cGjW2I8BjODt/kWPVdY+u9zj3ms75Q5qaZgnxUad83+eAg=="],
 

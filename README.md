@@ -48,20 +48,19 @@ directory tree; use configured aliases when importing across destination roots.
 
 ## Consuming the registry
 
-The hosted registry is at `https://beast-ui-registry.beastjs.workers.dev/r`, and
-the CLI uses it by default. The target must already be a Beast + Octane app with
-a `package.json`; `init` does not scaffold an app. The CLI is ready to publish as
-`@beast-ui/cli` but is not on npm yet, so for now run it from the **beast-ui
-repository root**:
+The CLI is published as [`@beastjs/cli`](https://www.npmjs.com/package/@beastjs/cli)
+and installs from the hosted registry at
+`https://beast-ui-registry.beastjs.workers.dev/r` by default. Run it inside an
+existing Beast + Octane app with a `package.json`; `init` does not scaffold an
+app. Node 22.22.2 or newer is required.
 
 ```bash
-bun install
-bun run cli init --cwd ../my-app
-bun run cli add button --cwd ../my-app
+npx @beastjs/cli init
+npx @beastjs/cli add button
 ```
 
-To try registry changes before they are deployed, start a local registry in
-one terminal:
+To try registry or CLI changes before they are released, run both from this
+repository instead. Start a local registry in one terminal:
 
 ```bash
 bun install
@@ -154,30 +153,31 @@ Examples:
 
 ```bash
 # Browse the hosted registry before initializing an app
-bun run cli list
+npx @beastjs/cli list
 
 # Add several items (shared dependencies are resolved once)
-bun run cli add utils theme --cwd ../my-app
+npx @beastjs/cli add utils theme
 
 # Preview an update that would replace edited source files
-bun run cli add button --cwd ../my-app --overwrite --dry-run
+npx @beastjs/cli add button --overwrite --dry-run
 
 # Apply that update
-bun run cli add button --cwd ../my-app --overwrite
+npx @beastjs/cli add button --overwrite
 
 # Copy sources and handle npm dependencies separately
-bun run cli add button --cwd ../my-app --skip-install
+npx @beastjs/cli add button --skip-install
 
-bun run cli add --help
+npx @beastjs/cli add --help
 ```
 
 Adding `button` also installs `utils` and `theme`. Identical source files are
 left in place; differing files stop the operation unless `--overwrite` is set.
 Package installation still runs on repeated adds unless `--skip-install` is set.
 
-If you prefer Node, build the CLI with `bun run --cwd packages/cli build`, then
-run `node /absolute/path/to/beast-ui/packages/cli/dist/index.js --help` from
-any directory. Node 22.22.2 or newer is required.
+To run an unreleased CLI under Node, build it with
+`bun run --cwd packages/cli build`, then run
+`node /absolute/path/to/beast-ui/packages/cli/dist/index.js --help` from any
+directory.
 
 ## Component showcase
 
@@ -237,6 +237,20 @@ in `bun.lock`. The Worker is served at
 `https://beast-ui-registry.beastjs.workers.dev`, the CLI's default registry. To
 use your own domain, add a `routes` entry to `apps/registry/wrangler.jsonc` and
 update `DEFAULT_REGISTRY` in `packages/cli/src/utils/config.ts`.
+
+## Releasing the CLI
+
+`.github/workflows/publish-cli.yml` publishes `@beastjs/cli` to npm with
+provenance when a tag named `cli-v<version>` is pushed. The workflow fails
+unless the tag matches the `version` in `packages/cli/package.json`, and it
+runs `bun run check` before publishing. It needs an Actions secret `NPM_TOKEN`
+with publish access to the `@beastjs` scope.
+
+```bash
+# after bumping packages/cli/package.json to 0.1.0 and merging to main
+git tag cli-v0.1.0
+git push origin cli-v0.1.0
+```
 
 ## Safety properties
 
