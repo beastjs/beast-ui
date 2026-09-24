@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "beast-ui-registry",
+  "compatibility_date": "2026-09-24",
+  // Static assets only: the registry is prebuilt JSON, so no Worker script runs.
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "none"
+  },
+  "workers_dev": true,
+  "preview_urls": false
+  // Serve from your own domain once it is on Cloudflare:
+  // "routes": [{ "pattern": "registry.example.com", "custom_domain": true }]
+}

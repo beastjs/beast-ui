@@ -1,5 +1,6 @@
 {
   "name": "beast-ui-workspace",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "packageManager": "bun@1.4.0",
@@ -10,8 +11,10 @@
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "bun run registry:build && bun run --cwd apps/docs dev",
-    "build": "bun run registry:build && bun run --cwd packages/cli build && bun run --cwd apps/docs build",
+    "build": "bun run registry:build && bun run --cwd packages/cli build && bun run --cwd apps/docs build && bun run --cwd apps/registry validate",
     "registry:build": "bun scripts/build-registry.ts",
+    "registry:dev": "bun run --cwd apps/registry dev",
+    "registry:deploy": "bun run --cwd apps/registry deploy",
     "preview": "bun run --cwd apps/docs preview",
     "cli": "bun packages/cli/src/index.ts",
     "typecheck": "tsc --noEmit && bun run --cwd packages/registry typecheck && bun run --cwd apps/docs typecheck",

@@ -6,8 +6,12 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Added
 
+- MIT license.
+- `apps/registry`: a Cloudflare Worker that serves the built registry, with
+  CORS and revalidation headers, and a CI job that deploys it from `main` once
+  Cloudflare credentials are configured.
 - Registry build (`scripts/build-registry.ts`) that validates the catalog and
-  publishes per-item payloads to `apps/docs/public/r/`.
+  publishes per-item payloads to `apps/registry/public/r/`.
 - `beast-ui` CLI with `init`, `list`, and `add`.
 - `button`, `utils`, and `theme` registry items.
 - Docs site with live component previews and links to the published JSON.
@@ -18,6 +22,9 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Changed
 
+- The registry now builds to `apps/registry/public/r/`. The docs dev server and
+  build still serve it at `/r`, and return 404 for unknown items instead of the
+  page fallback.
 - `beast-ui --version` reports the package version.
 - `add` names unknown items and suggests `list` instead of reporting a bare 404,
   and reports unreachable registries and missing package managers plainly.

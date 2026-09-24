@@ -1,0 +1,15 @@
+{
+  "name": "@beast-ui/registry-worker",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "bun ../../scripts/build-registry.ts",
+    "dev": "bun run build && wrangler dev --port 8787",
+    "deploy": "bun run build && wrangler deploy",
+    "validate": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "4.137.0"
+  }
+}

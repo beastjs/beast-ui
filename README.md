@@ -18,8 +18,9 @@ bun run check    # typecheck + test + build
 | `registry.json` | The catalog: one entry per item, with its files, npm dependencies, and registry dependencies. |
 | `packages/registry/` | The component sources themselves (`ui/`, `lib/`, `styles/`) plus the shared Zod schema and path helpers. |
 | `packages/cli/` | The `beast-ui` CLI: `init`, `list`, `add`. |
-| `apps/docs/` | The docs site, which also serves the built registry at `/r/*.json`. |
-| `scripts/build-registry.ts` | Compiles `registry.json` into `apps/docs/public/r/` payloads. |
+| `apps/docs/` | The docs site. In development it also serves the built registry at `/r/*.json`. |
+| `apps/registry/` | The Cloudflare Worker that serves the registry in production. |
+| `scripts/build-registry.ts` | Compiles `registry.json` into `apps/registry/public/r/` payloads. |
 | `tests/registry.test.ts` | End-to-end coverage of the build, the resolver, and the installer. |
 
 ## Adding a component to the registry
@@ -167,6 +168,26 @@ If you prefer Node, build the CLI with `bun run --cwd packages/cli build`, then
 run `node /absolute/path/to/beast-ui/packages/cli/dist/index.js --help` from
 any directory. Node 22.22.2 or newer is required.
 
+## Deploying the registry
+
+The registry is static JSON served by a Cloudflare Worker with
+[static assets](https://developers.cloudflare.com/workers/static-assets/); no
+Worker script runs. `apps/registry/public/_headers` allows cross-origin reads
+and makes clients revalidate on every request, and `/` redirects to
+`/r/registry.json`.
+
+```bash
+bun run registry:dev      # build, then serve at http://127.0.0.1:8787/r
+bun run registry:deploy   # build, then deploy (needs a Cloudflare login)
+```
+
+CI deploys from `main` after the checks pass, once the repository has an
+Actions variable `CLOUDFLARE_ACCOUNT_ID` and a secret `CLOUDFLARE_API_TOKEN`
+(a token with the *Edit Cloudflare Workers* permission). Until both are set,
+the deploy job is skipped. The Worker is served at
+`beast-ui-registry.<your-subdomain>.workers.dev`; to use your own domain, add a
+`routes` entry to `apps/registry/wrangler.jsonc`.
+
 ## Safety properties
 
 These are enforced by the schema and the path helpers, and covered by tests:
@@ -180,3 +201,5 @@ These are enforced by the schema and the path helpers, and covered by tests:
 - A failed catalog build leaves the previously published output untouched.
 
 Record changes in [CHANGELOG.md](CHANGELOG.md).
+
+beast-ui is released under the [MIT License](LICENSE).

@@ -58,6 +58,6 @@ export async function buildRegistry(root: string, output: string): Promise<Regis
 
 if (import.meta.main) {
   const root = fileURLToPath(new URL('../', import.meta.url))
-  const registry = await buildRegistry(root, path.join(root, 'apps/docs/public/r'))
-  console.log(`Built ${registry.items.length} registry items → apps/docs/public/r`)
+  const registry = await buildRegistry(root, path.join(root, 'apps/registry/public/r'))
+  console.log(`Built ${registry.items.length} registry items → apps/registry/public/r`)
 }

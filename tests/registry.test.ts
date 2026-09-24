@@ -230,6 +230,8 @@ describe('published CLI', () => {
     await run('npm', ['install', '--offline', '--no-audit', '--no-fund', path.join(packs, tarball)], { cwd })
     const manifest = JSON.parse(await readFile(path.join(cwd, 'node_modules/@beast-ui/cli/package.json'), 'utf8'))
     expect(manifest.dependencies).toBeUndefined()
+    expect(manifest.license).toBe('MIT')
+    expect(await readFile(path.join(cwd, 'node_modules/@beast-ui/cli/LICENSE'), 'utf8')).toBe(await readFile(path.join(root, 'LICENSE'), 'utf8'))
     const cli = (args: string[]) => run('node', [path.join(cwd, 'node_modules/@beast-ui/cli/dist/index.js'), ...args], { cwd })
     expect((await cli(['--version'])).stdout.trim()).toBe(manifest.version)
     await cli(['init', '--registry', await registryServer(), '--package-manager', 'npm'])
