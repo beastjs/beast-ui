@@ -39,6 +39,14 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Changed
 
+- `@beastjs/cli` 0.3.0 redesigns its output: a file plan marking each file as
+  created, replaced, or kept, npm dependencies one per line with their ranges,
+  a spinner while packages install (their output appears only on failure), and
+  a closing success note. Colors turn off in pipes, in CI, and with `NO_COLOR`.
+- `add` offers to create `beast-ui.json` when it is missing, or does so without
+  asking with `--yes`. Without a terminal to ask, it stops with that hint.
+- `add` keeps an existing file that already contains the code being added,
+  ignoring quotes, semicolons, and whitespace, and continues with the install.
 - `@beastjs/cli` 0.2.0 ignores registry fields it does not recognize, so a newer
   registry cannot break an older CLI. 0.1.0 validated registry payloads
   strictly and rejects the `meta` field that variants add.
