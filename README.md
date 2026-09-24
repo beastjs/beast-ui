@@ -160,6 +160,7 @@ edit it directly to change settings.
 | `add <items...>` | Copy one or more items and their registry dependencies; install their npm dependencies. |
 | `-c, --cwd <path>` | Select the target project; defaults to the current directory. |
 | `-r, --registry <url>` | Sets the registry for `init`; overrides it for a single `list` or `add` invocation. |
+| `add -y, --yes` | Create `beast-ui.json` without asking when it is missing. |
 | `add --dry-run` | Fetch and validate items, then show changes without writing files or installing packages. |
 | `add --overwrite` | Allow replacement of differing existing source files. |
 | `add --skip-install` | Copy source only; print the npm dependencies to install yourself. |
@@ -186,9 +187,12 @@ npx @beastjs/cli add button --skip-install
 npx @beastjs/cli add --help
 ```
 
-Adding `button` also installs `utils` and `theme`. Identical source files are
-left in place; differing files stop the operation unless `--overwrite` is set.
-Package installation still runs on repeated adds unless `--skip-install` is set.
+Adding `button` also installs `utils` and `theme`. Files that already contain
+the code being added are left in place, even with different quotes, semicolons,
+or whitespace; files with different code stop the operation unless
+`--overwrite` is set. Package installation still runs on repeated adds unless
+`--skip-install` is set. Without `beast-ui.json`, `add` offers to create it, or
+creates it without asking when you pass `--yes`.
 
 To run an unreleased CLI under Node, build it with
 `bun run --cwd packages/cli build`, then run

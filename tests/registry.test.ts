@@ -10,6 +10,7 @@ import { addComponents, installDependencies, planFiles } from '../packages/cli/s
 import { DEFAULT_REGISTRY, initConfig, readConfig } from '../packages/cli/src/utils/config.ts'
 import { fetchCatalog, fetchComponent, resolveItems } from '../packages/cli/src/utils/registry.ts'
 import { formatCatalog } from '../packages/cli/src/utils/catalog.ts'
+import { splitDependency, type Reporter } from '../packages/cli/src/utils/ui.ts'
 import { registryItemSchema, type RegistryItem } from '@beast-ui/registry/schema'
 
 const run = promisify(execFile)
@@ -39,6 +40,18 @@ async function registryServer() {
     const file = Bun.file(path.join(output, name))
     return await file.exists() ? new Response(file, { headers: { 'Content-Type': 'application/json' } }) : new Response('Missing', { status: 404 })
   })
+}
+// Captures CLI output; `answer` scripts the yes/no prompt, and undefined means no terminal.
+function quiet(answer?: boolean): Reporter & { lines: string[]; asked: string[] } {
+  const lines: string[] = []
+  const asked: string[] = []
+  return {
+    lines,
+    asked,
+    line: (text = '') => { lines.push(text) },
+    task: (text) => ({ done: (message) => { lines.push(`${text} -> ${message}`) }, fail: (message) => { lines.push(`${text} -> ${message}`) } }),
+    confirm: answer === undefined ? undefined : async (question) => { asked.push(question); return answer },
+  }
 }
 function item(name: string, dependencies: string[] = []): RegistryItem {
   return registryItemSchema.parse({ name, type: 'registry:lib', registryDependencies: dependencies, files: [{ path: `${name}.ts`, type: 'registry:lib', content: `export const ${name} = true` }] })
@@ -103,7 +116,7 @@ describe('registry distribution', () => {
     await mkdir(path.join(cwd, 'src/components/ui'), { recursive: true })
     const button = path.join(cwd, 'src/components/ui/button.btsx')
     await writeFile(button, 'local changes')
-    await expect(addComponents(['button'], { cwd, skipInstall: true })).rejects.toThrow('File already exists')
+    await expect(addComponents(['button'], { cwd, skipInstall: true })).rejects.toThrow('already exists with different code')
     expect(await readFile(button, 'utf8')).toBe('local changes')
     expect(await Bun.file(path.join(cwd, 'src/lib/utils.ts')).exists()).toBe(false)
     await addComponents(['button'], { cwd, skipInstall: true, overwrite: true })
@@ -135,7 +148,7 @@ describe('registry distribution', () => {
     const config = await initConfig(cwd, server(() => Response.json(nested)))
     await mkdir(path.join(cwd, 'src/lib/internal'), { recursive: true })
     await writeFile(path.join(cwd, 'src/lib/internal/value.ts'), 'local changes')
-    await expect(addComponents(['nested'], { cwd, skipInstall: true })).rejects.toThrow('File already exists')
+    await expect(addComponents(['nested'], { cwd, skipInstall: true })).rejects.toThrow('already exists with different code')
     await rm(path.join(cwd, 'src/lib/internal'), { recursive: true })
     await symlink(await temp(), path.join(cwd, 'src/lib/internal'))
     await expect(planFiles(cwd, config, [nested])).rejects.toThrow('symlink')
@@ -279,6 +292,82 @@ describe('registry distribution', () => {
     await expect(buildRegistry(cwd, path.join(cwd, 'output'))).rejects.toThrow(message)
   })
 
+  test('keeps an existing file that already contains the code and still installs the rest', async () => {
+    const cwd = await project()
+    await initConfig(cwd, await registryServer(), 'bun')
+    await mkdir(path.join(cwd, 'src/lib'), { recursive: true })
+    const utils = [
+      "import { clsx, type ClassValue } from 'clsx';",
+      "import { twMerge } from 'tailwind-merge';",
+      '',
+      'export function cn(...inputs: ClassValue[]) {',
+      '  return twMerge(clsx(inputs));',
+      '}',
+      '',
+      'export const noop = () => {};',
+      '',
+    ].join('\n')
+    await writeFile(path.join(cwd, 'src/lib/utils.ts'), utils)
+    const reporter = quiet()
+    const result = await addComponents(['button'], { cwd, skipInstall: true, reporter })
+    expect(await readFile(path.join(cwd, 'src/lib/utils.ts'), 'utf8')).toBe(utils)
+    expect(result.kept).toEqual([expect.objectContaining({ path: 'src/lib/utils.ts', reason: 'contains' })])
+    expect(result.files.map((file) => file.path).sort()).toEqual(['src/components/ui/button.btsx', 'src/styles/theme.css'])
+    expect(result.dependencies).toContain('clsx@^2.1.1')
+    expect(reporter.lines.some((line) => line.includes('src/lib/utils.ts') && line.includes('already contains this code'))).toBe(true)
+  })
+
+  test('lists each dependency on its own line and ends with a success note', async () => {
+    const cwd = await project()
+    await initConfig(cwd, await registryServer(), 'bun')
+    const reporter = quiet()
+    const result = await addComponents(['button-bouncy'], { cwd, skipInstall: true, reporter })
+    const start = reporter.lines.findIndex((line) => line.includes('Dependencies'))
+    const listed = reporter.lines.slice(start + 1, start + 1 + result.dependencies.length)
+    for (const [index, dependency] of result.dependencies.entries()) {
+      const { name, range } = splitDependency(dependency)
+      expect(listed[index]).toContain(name)
+      expect(listed[index]).toContain(range)
+    }
+    const ready = reporter.lines.findIndex((line) => line.includes('button-bouncy is ready.'))
+    const wrote = reporter.lines.findIndex((line) => line.includes('Wrote 4 files'))
+    expect(wrote).toBeGreaterThan(start)
+    expect(ready).toBeGreaterThan(wrote)
+    expect(reporter.lines.slice(ready + 1).every((line) => !line.includes('✗'))).toBe(true)
+  })
+
+  test('splits dependency names from their ranges, keeping scopes', () => {
+    expect(splitDependency('@octanejs/base-ui@0.1.55')).toEqual({ name: '@octanejs/base-ui', range: '0.1.55' })
+    expect(splitDependency('clsx@^2.1.1')).toEqual({ name: 'clsx', range: '^2.1.1' })
+    expect(splitDependency('clsx')).toEqual({ name: 'clsx', range: 'latest' })
+  })
+
+  test('without beast-ui.json, asks to initialize and then adds', async () => {
+    const cwd = await project()
+    const registry = await registryServer()
+    await expect(addComponents(['button'], { cwd, registry, skipInstall: true, reporter: quiet() })).rejects.toThrow('No beast-ui.json')
+    expect((await readdir(cwd)).sort()).toEqual(['package.json'])
+
+    const declined = quiet(false)
+    expect((await addComponents(['button'], { cwd, registry, skipInstall: true, reporter: declined })).cancelled).toBe(true)
+    expect(declined.asked).toEqual(['No beast-ui.json here. Initialize it and add button?'])
+    expect((await readdir(cwd)).sort()).toEqual(['package.json'])
+
+    const accepted = quiet(true)
+    const result = await addComponents(['button'], { cwd, registry, skipInstall: true, reporter: accepted })
+    expect(result.files).toHaveLength(3)
+    expect((await readConfig(cwd)).registry).toBe(registry)
+    expect(accepted.lines.some((line) => line.includes('Created beast-ui.json'))).toBe(true)
+  })
+
+  test('--yes initializes without asking', async () => {
+    const cwd = await project()
+    const reporter = quiet(false)
+    const result = await addComponents(['utils'], { cwd, registry: await registryServer(), skipInstall: true, yes: true, reporter })
+    expect(reporter.asked).toEqual([])
+    expect(result.files.map((file) => file.path)).toEqual(['src/lib/utils.ts'])
+  })
+
   test('invalid catalogs do not replace a previous build', async () => {
     const cwd = await temp()
     const output = path.join(cwd, 'output')
@@ -305,7 +394,7 @@ describe('published CLI', () => {
     const cli = (args: string[]) => run('node', [path.join(cwd, 'node_modules/@beastjs/cli/dist/index.js'), ...args], { cwd })
     expect((await cli(['--version'])).stdout.trim()).toBe(manifest.version)
     await cli(['init', '--registry', await registryServer(), '--package-manager', 'npm'])
-    expect((await cli(['add', 'button', '--skip-install'])).stdout).toContain('Added button.')
+    expect((await cli(['add', 'button', '--skip-install'])).stdout).toContain('button is ready.')
     expect(await readFile(path.join(cwd, 'src/components/ui/button.btsx'), 'utf8')).toContain('from "@/lib/utils"')
     await expect(cli(['add', 'does-not-exist', '--skip-install'])).rejects.toMatchObject({ stderr: expect.stringContaining('Unknown registry item: does-not-exist') })
   }, 60_000)
