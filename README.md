@@ -188,6 +188,20 @@ register it in `apps/web/src/previews/index.ts`; a test fails until both exist.
 Preview files end in `-preview` because Beast names a file's component after
 the file, and a preview named `button.btsx` would shadow the `Button` it imports.
 
+### Deploying the showcase
+
+The showcase is a single-page app served by its own Cloudflare Worker,
+`beast-ui-web`, from `apps/web/dist` (see `apps/web/wrangler.jsonc`). Unknown
+paths serve `index.html`, so routes such as `/components/button` survive a
+reload, and hashed files under `/static/` are cached as immutable. Wrangler runs
+the web build before every upload. Create the Worker in Workers Builds with the
+same settings as the registry, using these commands:
+
+| Setting | Value |
+| --- | --- |
+| Deploy command | `bun run web:deploy` |
+| Non-production branch deploy command | `bun run web:preview` |
+
 ## Deploying the registry
 
 The registry is static JSON served by a Cloudflare Worker with

@@ -7,7 +7,10 @@
     "dev": "rsbuild dev",
     "build": "rsbuild build",
     "preview": "rsbuild preview",
-    "typecheck": "tsrx-tsc --noEmit"
+    "typecheck": "tsrx-tsc --noEmit",
+    "deploy": "wrangler deploy",
+    "upload-preview": "wrangler versions upload",
+    "validate": "wrangler deploy --dry-run"
   },
   "dependencies": {
     "@beast-ui/registry": "workspace:*",
@@ -24,6 +27,7 @@
     "@octanejs/rsbuild-plugin": "0.1.54",
     "@rsbuild/core": "^2.2.9",
     "@rsbuild/plugin-tailwindcss": "^2.0.3",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "wrangler": "4.137.0"
   }
 }

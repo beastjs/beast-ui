@@ -10,6 +10,8 @@ All notable changes to `beast-ui` will be recorded here.
   (Rsbuild, TanStack Router, resizable sidebar). Each registry component gets a
   page with a live preview, install command, and dependencies, all driven by
   `registry.json`.
+  It deploys to its own Cloudflare Worker, `beast-ui-web`, with client-side
+  routes served on reload.
 - MIT license.
 - `apps/registry`: a Cloudflare Worker that serves the built registry, with
   CORS and revalidation headers. Cloudflare Workers Builds deploys it from

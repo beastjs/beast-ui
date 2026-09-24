@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "beast-ui-web",
+  "compatibility_date": "2026-09-24",
+  // Build the showcase first, so any `wrangler deploy` ships the current app.
+  "build": {
+    "command": "bun run build"
+  },
+  // Static assets only. Unknown paths serve index.html so client-side routes
+  // such as /components/button survive a reload.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  "workers_dev": true,
+  "preview_urls": true
+}
