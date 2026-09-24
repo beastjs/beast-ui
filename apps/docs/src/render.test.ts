@@ -1,40 +1,92 @@
 /// <reference types="bun" />
 
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { GlobalRegistrator } from '@happy-dom/global-registrator'
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { fileURLToPath } from 'node:url'
-import { createServer, type ViteDevServer } from 'vite'
+import type { ComponentBody, Root } from 'octane'
+import { createRunnableDevEnvironment, createServer, type Plugin, type RunnableDevEnvironment, type ViteDevServer } from 'vite'
+
+type OctaneRuntime = Pick<typeof import('octane'), 'createRoot' | 'flushSync'>
+interface ComponentModule { default: ComponentBody }
+
+// The DOM environment has no HMR socket, so stub Vite's client. The virtual
+// runtime module re-exports octane through Vite's resolver, giving the test the
+// same octane instance the compiled components import.
+const domTestModules: Plugin = {
+  name: 'dom-test-modules',
+  enforce: 'pre',
+  resolveId: (id) => id === 'virtual:octane-runtime' ? '\0octane-runtime'
+    : id === '/@vite/client' || id.endsWith('/vite/dist/client/client.mjs') ? '\0vite-client-stub' : undefined,
+  load: (id) => id === '\0octane-runtime' ? "export { createRoot, flushSync } from 'octane'"
+    : id === '\0vite-client-stub'
+      // Each module needs its own hot.data: octane's HMR wrappers are keyed on it.
+      ? 'export const createHotContext = () => ({ data: {}, accept() {}, dispose() {}, prune() {}, invalidate() {}, on() {}, off() {}, send() {} })\n' +
+        'export const updateStyle = () => {}\nexport const removeStyle = () => {}\nexport const injectQuery = (url) => url'
+      : undefined,
+}
 
 let server: ViteDevServer
+let dom: RunnableDevEnvironment
+const roots: Root[] = []
 beforeAll(async () => {
+  // Keep the host timers: Vite's dev server relies on Node timer handles.
+  const timers = { setTimeout, clearTimeout, setInterval, clearInterval, queueMicrotask }
+  GlobalRegistrator.register()
+  Object.assign(globalThis, timers)
   server = await createServer({
     root: fileURLToPath(new URL('../', import.meta.url)),
     server: { middlewareMode: true, hmr: false, watch: null },
+    plugins: [domTestModules],
+    environments: {
+      // Compiled for the browser, like the docs site, but runnable in-process.
+      dom: { consumer: 'client', optimizeDeps: { noDiscovery: true }, dev: { moduleRunnerTransform: true, createEnvironment: (name, config) => createRunnableDevEnvironment(name, config, { runnerOptions: { hmr: false } }) } },
+    },
   })
+  dom = server.environments.dom as RunnableDevEnvironment
+  // Compile octane's client runtime once, outside any single test's timeout.
+  await dom.runner.import<OctaneRuntime>('virtual:octane-runtime')
+}, 60_000)
+afterEach(() => {
+  for (const root of roots.splice(0)) root.unmount()
+  document.body.replaceChildren()
 })
-afterAll(async () => { await server?.close() })
+afterAll(async () => {
+  await server?.close()
+  await GlobalRegistrator.unregister()
+})
+
+// @octanejs/motion needs octane's client context runtime, so motion components
+// (and the docs page that previews them) are verified in a DOM, not with SSR.
+async function mount(specifier: string, props?: Record<string, unknown>): Promise<HTMLElement> {
+  const { createRoot, flushSync } = await dom.runner.import<OctaneRuntime>('virtual:octane-runtime')
+  const { default: Component } = await dom.runner.import<ComponentModule>(specifier)
+  const container = document.createElement('div')
+  document.body.append(container)
+  const root = createRoot(container)
+  roots.push(root)
+  flushSync(() => root.render(Component, props ?? {}))
+  return container
+}
 
 describe('rendered components', () => {
-  test('new motion components render with defaults and explicit props', async () => {
-    const { renderToString } = await server.ssrLoadModule('octane/server')
-    const { default: ScrubField } = await server.ssrLoadModule('@beast-ui/registry/ui/scrubfield')
-    const { default: Squishy } = await server.ssrLoadModule('@beast-ui/registry/ui/squishy')
-    const field = renderToString(ScrubField).html
+  test('motion components render with defaults and explicit props', async () => {
+    const field = (await mount('@beast-ui/registry/ui/scrubfield')).innerHTML
     expect(field).toContain('role="spinbutton"')
     expect(field).toContain('aria-valuenow="0"')
     expect(field).not.toMatch(/NaN|undefinedpx/)
-    const customField = renderToString(ScrubField, { label: 'Opacity', value: 50, suffix: '%', disabled: true }).html
+    const customField = (await mount('@beast-ui/registry/ui/scrubfield', { label: 'Opacity', value: 50, suffix: '%', disabled: true })).innerHTML
     expect(customField).toContain('Opacity')
     expect(customField).toContain('aria-valuenow="50"')
     expect(customField).toContain('aria-valuetext="50 %"')
     expect(customField).toContain('disabled')
-    const toggle = renderToString(Squishy).html
+    const toggle = (await mount('@beast-ui/registry/ui/squishy')).innerHTML
     expect(toggle).toContain('role="switch"')
     expect(toggle).toContain('aria-checked="false"')
     expect(toggle).not.toMatch(/NaN|undefinedpx/)
-    const customToggle = renderToString(Squishy, { checked: true, label: 'Notifications', disabled: true }).html
-    expect(customToggle).toContain('aria-checked="true"')
-    expect(customToggle).toContain('Notifications')
-    expect(customToggle).toMatch(/<button[^>]*\sdisabled(?:[\s=>])/)
+    const customToggle = await mount('@beast-ui/registry/ui/squishy', { checked: true, label: 'Notifications', disabled: true })
+    expect(customToggle.innerHTML).toContain('aria-checked="true"')
+    expect(customToggle.innerHTML).toContain('Notifications')
+    expect(customToggle.querySelector('button')?.disabled).toBe(true)
   })
 
   test('CallChip renders defaults, icons, statuses, and optional retry accessibly', async () => {
@@ -77,14 +129,12 @@ describe('rendered components', () => {
   })
 
   test('docs preserve command line breaks and complete alias instructions', async () => {
-    const { default: App } = await server.ssrLoadModule('/src/App.btsx')
-    const { renderToString } = await server.ssrLoadModule('octane/server')
-    const { html } = renderToString(App)
+    const html = (await mount('/src/App.btsx')).innerHTML
     expect(html).toContain('http://127.0.0.1:5173/r\nbun run cli add button --cwd ../my-app --dry-run\nbun run cli add button --cwd ../my-app')
     expect(html).toContain('id="call-chip"')
     expect(html).toContain('/r/call-chip.json')
     expect(html).toContain('bun run cli add call-chip')
     expect(html).toContain('Configure @/* to resolve to src/* in both TypeScript and Vite.')
     expect(html).toContain('The installer adds the button, class utility, theme, and npm dependencies.')
-  })
+  }, 30_000) // First load compiles the whole docs page.
 })

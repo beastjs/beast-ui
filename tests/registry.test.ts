@@ -1,14 +1,17 @@
 import { afterEach, describe, expect, test } from 'bun:test'
+import { execFile } from 'node:child_process'
 import { mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { buildRegistry } from '../scripts/build-registry.ts'
-import { addComponents, planFiles } from '../packages/cli/src/commands/add.ts'
+import { promisify } from 'node:util'
+import { assertContainedImports, buildRegistry } from '../scripts/build-registry.ts'
+import { addComponents, installDependencies, planFiles } from '../packages/cli/src/commands/add.ts'
 import { initConfig, readConfig } from '../packages/cli/src/utils/config.ts'
 import { fetchComponent, resolveItems } from '../packages/cli/src/utils/registry.ts'
 import { registryItemSchema, type RegistryItem } from '@beast-ui/registry/schema'
 
+const run = promisify(execFile)
 const root = fileURLToPath(new URL('../', import.meta.url))
 const cleanup: (() => void | Promise<void>)[] = []
 afterEach(async () => { for (const fn of cleanup.splice(0).reverse()) await fn() })
@@ -69,7 +72,7 @@ describe('registry distribution', () => {
     const cwd = await project()
     await initConfig(cwd, await registryServer(), 'bun')
     const result = await addComponents(['call-chip'], { cwd, skipInstall: true })
-    expect(result.dependencies).toEqual(['@hugeicons/core-free-icons@^4.3.4'])
+    expect(result.dependencies).toEqual(['@hugeicons/core-free-icons@^4.3.5'])
     expect(await readFile(path.join(cwd, 'src/components/ui/call-chip.btsx'), 'utf8'))
       .toBe(await readFile(path.join(root, 'packages/registry/ui/call-chip.btsx'), 'utf8'))
   })
@@ -162,12 +165,24 @@ describe('registry distribution', () => {
   })
 
   test('reports missing items, malformed responses, name mismatch, and missing content', async () => {
-    await expect(fetchComponent(server(() => new Response('', { status: 404 })), 'missing')).rejects.toThrow('404')
+    await expect(fetchComponent(server(() => new Response('', { status: 404 })), 'missing')).rejects.toThrow('Unknown registry item: missing')
+    await expect(fetchComponent(server(() => new Response('', { status: 500 })), 'utils')).rejects.toThrow('Registry request failed (500)')
+    const closed = server(() => new Response(''))
+    await cleanup.pop()?.()
+    await expect(fetchComponent(closed, 'utils')).rejects.toThrow('Could not reach the registry')
     await expect(fetchComponent(server(() => new Response('<html>')), 'utils')).rejects.toThrow('did not return JSON')
     await expect(fetchComponent(server(() => Response.json(item('other'))), 'utils')).rejects.toThrow('Expected registry item')
     const missingContent = item('utils')
     delete missingContent.files[0].content
     await expect(fetchComponent(server(() => Response.json(missingContent)), 'utils')).rejects.toThrow('Missing file content')
+  })
+
+  test('explains a missing package manager instead of surfacing ENOENT', async () => {
+    const cwd = await project()
+    const original = process.env.PATH
+    process.env.PATH = await temp()
+    cleanup.push(() => { process.env.PATH = original })
+    await expect(installDependencies(cwd, 'pnpm', ['clsx@^2.1.1'])).rejects.toThrow('Could not run pnpm')
   })
 
   test('init detects the package manager and preserves existing configuration', async () => {
@@ -177,6 +192,21 @@ describe('registry distribution', () => {
     expect((await readConfig(cwd)).packageManager).toBe('bun')
     await expect(initConfig(cwd, 'http://localhost:9999/r')).rejects.toThrow('EEXIST')
     expect((await readConfig(cwd)).registry).toBe('http://localhost:5173/r')
+  })
+
+  test('rejects relative imports that leave their install root', async () => {
+    const ui = (content: string) => ({ path: 'packages/registry/ui/button.btsx', type: 'registry:ui' as const, content })
+    expect(() => assertContainedImports(ui('import { cn } from "../lib/utils"'))).toThrow('leaves the ui install root')
+    expect(() => assertContainedImports(ui("const lazy = import('../lib/lazy.ts')"))).toThrow('leaves the ui install root')
+    expect(() => assertContainedImports({ path: 'styles/theme.css', type: 'registry:style', content: '@import "../base.css";' })).toThrow('styles install root')
+    expect(() => assertContainedImports(ui('import { cn } from "@/lib/utils"\nimport "./parts/icon.btsx"'))).not.toThrow()
+    expect(() => assertContainedImports({ path: 'packages/registry/lib/internal/value.ts', type: 'registry:lib', content: 'export * from "../utils.ts"' })).not.toThrow()
+    const cwd = await temp()
+    await mkdir(path.join(cwd, 'ui'))
+    await writeFile(path.join(cwd, 'ui/leak.btsx'), 'import { cn } from "../lib/utils"')
+    const leak = { name: 'test', homepage: 'http://localhost', items: [{ name: 'leak', type: 'registry:ui', files: [{ path: 'ui/leak.btsx', type: 'registry:ui' }] }] }
+    await writeFile(path.join(cwd, 'registry.json'), JSON.stringify(leak))
+    await expect(buildRegistry(cwd, path.join(cwd, 'output'))).rejects.toThrow('leaves the ui install root')
   })
 
   test('invalid catalogs do not replace a previous build', async () => {
@@ -189,4 +219,22 @@ describe('registry distribution', () => {
     await expect(buildRegistry(cwd, output)).rejects.toThrow('Unknown registry dependency')
     expect(await readFile(path.join(output, 'existing.json'), 'utf8')).toBe('keep')
   })
+})
+
+describe('published CLI', () => {
+  test('packs without runtime dependencies and installs components under Node', async () => {
+    const packs = await temp()
+    await run('bun', ['pm', 'pack', '--destination', packs, '--quiet'], { cwd: path.join(root, 'packages/cli') })
+    const [tarball] = await readdir(packs)
+    const cwd = await project()
+    await run('npm', ['install', '--offline', '--no-audit', '--no-fund', path.join(packs, tarball)], { cwd })
+    const manifest = JSON.parse(await readFile(path.join(cwd, 'node_modules/@beast-ui/cli/package.json'), 'utf8'))
+    expect(manifest.dependencies).toBeUndefined()
+    const cli = (args: string[]) => run('node', [path.join(cwd, 'node_modules/@beast-ui/cli/dist/index.js'), ...args], { cwd })
+    expect((await cli(['--version'])).stdout.trim()).toBe(manifest.version)
+    await cli(['init', '--registry', await registryServer(), '--package-manager', 'npm'])
+    expect((await cli(['add', 'button', '--skip-install'])).stdout).toContain('Added button.')
+    expect(await readFile(path.join(cwd, 'src/components/ui/button.btsx'), 'utf8')).toContain('from "@/lib/utils"')
+    await expect(cli(['add', 'does-not-exist', '--skip-install'])).rejects.toMatchObject({ stderr: expect.stringContaining('Unknown registry item: does-not-exist') })
+  }, 60_000)
 })

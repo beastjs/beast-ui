@@ -14,7 +14,7 @@
     "typecheck": "tsrx-tsc --noEmit"
   },
   "dependencies": {
-    "@hugeicons/core-free-icons": "^4.3.4",
+    "@hugeicons/core-free-icons": "^4.3.5",
     "@octanejs/base-ui": "0.1.53",
     "@octanejs/motion": "^0.1.53",
     "class-variance-authority": "^0.7.1",

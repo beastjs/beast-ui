@@ -1,13 +1,25 @@
 {
   "name": "@beast-ui/cli",
   "version": "0.0.0",
-  "private": true,
+  "description": "Copy Beast UI source components into a Beast + Octane project",
+  "keywords": ["beast", "octane", "tsrx", "components", "registry", "shadcn", "cli"],
+  "homepage": "https://github.com/beastjs/beast-ui#readme",
+  "bugs": "https://github.com/beastjs/beast-ui/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/beastjs/beast-ui.git",
+    "directory": "packages/cli"
+  },
   "type": "module",
   "bin": { "beast-ui": "./dist/index.js" },
   "files": ["dist"],
   "engines": { "node": ">=22.22.2" },
-  "scripts": { "build": "bun build src/index.ts --target node --outdir dist" },
-  "dependencies": {
+  "publishConfig": { "access": "public" },
+  "scripts": {
+    "build": "bun build src/index.ts --target node --outdir dist",
+    "prepack": "bun run build"
+  },
+  "devDependencies": {
     "@beast-ui/registry": "workspace:*",
     "commander": "^15.0.0"
   }

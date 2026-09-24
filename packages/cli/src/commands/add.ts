@@ -48,7 +48,9 @@ export function installDependencies(cwd: string, manager: Config['packageManager
   if (!dependencies.length) return Promise.resolve()
   return new Promise((resolve, reject) => {
     const child = spawn(manager, [manager === 'npm' ? 'install' : 'add', ...dependencies], { cwd, stdio: 'inherit', shell: false })
-    child.once('error', reject)
+    child.once('error', (error: NodeJS.ErrnoException) => reject(error.code === 'ENOENT'
+      ? new Error(`Could not run ${manager}. Install it, or rerun with --skip-install and install the dependencies yourself.`)
+      : error))
     child.once('close', (code) => code === 0 ? resolve() : reject(new Error(`${manager} exited with code ${code}`)))
   })
 }
