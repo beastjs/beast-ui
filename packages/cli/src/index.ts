@@ -6,6 +6,7 @@ import packageJson from '../package.json' with { type: 'json' }
 import { addComponents } from './commands/add.ts'
 import { DEFAULT_REGISTRY, findConfig, initConfig } from './utils/config.ts'
 import { fetchCatalog } from './utils/registry.ts'
+import { formatCatalog } from './utils/catalog.ts'
 
 interface InitOptions { cwd: string; registry: string; packageManager?: Config['packageManager'] }
 interface ListOptions { cwd: string; registry?: string }
@@ -34,7 +35,7 @@ program.command('list')
   .action(async (options: ListOptions) => {
     const registry = options.registry ?? (await findConfig(path.resolve(options.cwd)))?.registry ?? DEFAULT_REGISTRY
     const catalog = await fetchCatalog(registry)
-    for (const item of catalog.items) console.log(`${item.name.padEnd(16)} ${item.description ?? item.type}`)
+    for (const line of formatCatalog(catalog.items)) console.log(line)
   })
 
 program.command('add')

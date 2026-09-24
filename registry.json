@@ -52,6 +52,45 @@
       ]
     },
     {
+      "name": "button-ripple",
+      "type": "registry:ui",
+      "title": "Ripple Button",
+      "description": "A button that spreads a ripple from the point of press.",
+      "registryDependencies": [
+        "button"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/button-ripple.btsx",
+          "type": "registry:ui"
+        }
+      ],
+      "meta": {
+        "variantOf": "button"
+      }
+    },
+    {
+      "name": "button-bouncy",
+      "type": "registry:ui",
+      "title": "Bouncy Button",
+      "description": "A button that springs on hover and squashes on press.",
+      "dependencies": [
+        "@octanejs/motion@^0.1.54"
+      ],
+      "registryDependencies": [
+        "button"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/button-bouncy.btsx",
+          "type": "registry:ui"
+        }
+      ],
+      "meta": {
+        "variantOf": "button"
+      }
+    },
+    {
       "name": "scrubfield",
       "type": "registry:ui",
       "title": "Scrub Field",

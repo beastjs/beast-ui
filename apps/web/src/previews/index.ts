@@ -11,6 +11,8 @@ export interface Preview {
 // `-preview` to keep that name from shadowing the component they import.
 export const previews: Record<string, Preview> = {
   button: { icon: 'switch', component: lazy(() => import('./button-preview.btsx')) },
+  'button-ripple': { icon: 'switch', component: lazy(() => import('./button-ripple-preview.btsx')) },
+  'button-bouncy': { icon: 'switch', component: lazy(() => import('./button-bouncy-preview.btsx')) },
   scrubfield: { icon: 'timeline', component: lazy(() => import('./scrubfield-preview.btsx')) },
   squishy: { icon: 'spinner-ring', component: lazy(() => import('./squishy-preview.btsx')) },
   'call-chip': { icon: 'search', component: lazy(() => import('./call-chip-preview.btsx')) },

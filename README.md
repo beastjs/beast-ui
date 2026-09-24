@@ -38,6 +38,22 @@ bun run check    # typecheck + test + build
 4. Run `bun run check`. The build rejects relative imports that leave a file's
    install root, such as `../lib/utils` from a UI file.
 
+### Variants
+
+A variant is a separate UI item that builds on a base component, such as
+`button-ripple` and `button-bouncy` on `button`. Visual-only differences belong
+in the base component's `cva` variants; behavior and extra dependencies belong
+in a variant item, so users of the base do not install them.
+
+- Import the base by relative path (`import Button from "./button.btsx"`). Both
+  files install into `paths.ui`, so the path holds in the consuming project.
+- In `registry.json`, list the base in `registryDependencies` and mark the item
+  with `"meta": { "variantOf": "button" }`. The build checks that the base
+  exists, is a `registry:ui` item, is not itself a variant, and is listed as a
+  dependency.
+- `list` in the CLI and the showcase sidebar show variants under their base, and
+  installing a variant installs its base first.
+
 The installer strips `packages/registry/ui/`, `packages/registry/lib/`, or
 `packages/registry/styles/` from each file's path according to its type. The short
 roots `ui/`, `lib/`, and `styles/` are also supported. Everything beneath that
