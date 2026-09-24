@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { Icon } from '@/lib/icons';
+import { Icon } from '@beast-ui/icons';
 import Button from "./ui/Button.btsx";
 import { ThemeToggle } from "./ThemeProvider.btsx";
 import { Link } from "@octanejs/tanstack-router";
@@ -23,19 +23,19 @@ component Brand
 
 
   div(className={cn(BRAND_CLASS, className)})
-    Link(className="flex items-center gap-2.5 font-medium tracking-tight" to="/" aria-label="Beast UI home")
-      img(src="/beast.svg" alt="" className="size-6")
+    Link(className="flex items-center gap-4 font-medium tracking-tight" to="/" aria-label="Beast UI home")
+      Icon(name="beast" className="size-8 m-0.75")
       span Beast UI
     div #{children}
 
 
 props { toggleSidebar, isCompact = false }: TopbarProps
-header(className="sticky top-0 z-40 backdrop-blur-3xl w-full")
-  div(className="topbar w-full px-5 flex items-center justify-between gap-4")
+header(className="sticky top-0 z-40 bg-surface/20 backdrop-blur-3xl w-full")
+  div(className="topbar w-full px-3.5 flex items-center justify-between gap-4")
     Brand
       div(className="hidden md:flex items-center")
         button(className="size-6 aspect-square place-items-center text-input hover:text-foreground/80 hover:border-input transition" onClick={toggleSidebar} aria-label={isCompact ? "Expand sidebar" : "Compact sidebar"} aria-pressed={isCompact} title={isCompact ? "Expand sidebar" : "Compact sidebar"})
-          Icon(name='sidebar' className="size-5")
+          Icon(name='sidebar' className="size-5 m-0.75")
     div(className="flex items-center gap-2")
       ThemeToggle
       Button(label="GitHub" variant='default' size="sm" type='a' href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" className="hidden md:flex")

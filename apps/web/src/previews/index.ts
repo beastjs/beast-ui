@@ -1,5 +1,5 @@
 import { lazy, type ComponentBody } from 'octane'
-import type { IconName } from '@/lib/icons/types'
+import type { IconName } from '@beast-ui/icons'
 
 export interface Preview {
   icon: IconName

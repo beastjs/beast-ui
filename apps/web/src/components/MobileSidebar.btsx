@@ -1,6 +1,6 @@
 import { createElement, type OctaneNode } from 'octane'
 import { Link } from '@octanejs/tanstack-router'
-import { Icon } from '@/lib/icons'
+import { Icon } from '@beast-ui/icons'
 import { cn } from '@/lib/utils'
 import Drawer, { DrawerClose, DrawerTrigger } from './ui/Drawer.btsx'
 import { ThemeToggle } from './ThemeProvider.btsx'

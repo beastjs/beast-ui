@@ -133,7 +133,7 @@ Then it asks:
 | **Variant of** | the base, when a file named `<base>-something` imports `<base>` | a base component, or `-`. Variants cannot be based on variants. |
 | **Registry dependencies** | the items the imports point to, `theme` when theme colors are used, and the base of a variant | item names. Each must exist or be staged, and a variant must list its base. |
 | **npm dependencies** | each package with the range the workspace already uses, else `^<latest>` from npm | `name` or `name@range`, e.g. `clsx@^2.1.1` |
-| **Showcase icon** | the base's icon for a variant, else `folder` | one of the listed names from `apps/web/src/lib/icons/icons.ts` |
+| **Showcase icon** | the base's icon for a variant, else `folder` | one of the listed names, one per file in `packages/icons/svg`. See [Adding an icon](../packages/icons/README.md). |
 
 **The plan**
 

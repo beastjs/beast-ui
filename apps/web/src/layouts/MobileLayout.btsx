@@ -12,5 +12,6 @@ setup
 fragment
   MobileSidebar(open={mobileNavOpen} onOpenChange={setMobileNavOpen})
     SidebarNav(path={path})
-  main(className='min-w-0')
-    Outlet
+  main(className='border overflow-hidden')
+    div(className='h-screen overflow-hidden border')
+      Outlet

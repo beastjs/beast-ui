@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import {Icon, type IconName} from "@/lib/icons"
+import {Icon, type IconName} from "@beast-ui/icons"
 import { navGroups } from "@/lib/navs"
 import { components } from "@/lib/catalog"
 import { Link } from "@octanejs/tanstack-router"
@@ -21,10 +21,10 @@ module
     // onNavigate: (to: string) => (event: MouseEvent) => void
   }
 
-  const SIDEBAR_CLASS = "hidden md:flex flex-col w-full h-[calc(100dvh-var(--topbar-height))] border-t-[0.4px] border-border/40 overflow-hidden"
+  const SIDEBAR_CLASS = "hidden md:flex flex-col w-full h-[calc(100dvh-var(--topbar-height))] dark:bg-background/70 border-t-[0.4px] border-sidebar-border overflow-hidden"
   const SIDEBAR_ITEM_CLASS = "flex w-full items-center gap-1.75 rounded-[12px] border py-1 pl-1 pr-[8px] text-left transition-all duration-200 ease-out"
   const SIDEBAR_ITEM_SELECTED_CLASS = "bg-[linear-gradient(in_oklab_180deg,oklab(95.2%_0_0)_0%,oklab(91.3%_0_0)_100%)]  shadow-[inset_0_1px_0_#FFFFFF54,0_2.5px_3.5px_-1px_#00000026,0_0_0_1px_#D4D4D4] dark:bg-origin-border dark:bg-[linear-gradient(in_oklab_180deg,oklab(32%_0_0)_0%,oklab(25%_0_0)_100%)] dark:shadow-[inset_0_1px_0_#FFFFFF30,0_3px_3px_-1px_#00000026,0_0_0_1px_#04040460] dark:hover:brightness-115 hover:brightness-102 border-border/0"
-  const SIDEBAR_ITEM_DEFAULT_CLASS = "border-transparent bg-background dark:bg-transparent hover:bg-sidebar/70 dark:hover:bg-sidebar"
+  const SIDEBAR_ITEM_DEFAULT_CLASS = "border-transparent bg-surface dark:bg-transparent hover:bg-sidebar/70 dark:hover:bg-sidebar"
   const SIDEBAR_ICON_CONTAINER_CLASS = "flex size-7.5 shrink-0 items-center justify-center rounded-[8px] bg-transparent"
   const SIDEBAR_ICON_SELECTED_CONTAINER_CLASS = "flex size-7.5 shrink-0 items-center justify-center rounded-[8px] light:bg-background dark:bg-background/50 light:shadow-[0_0_4px_rgba(0,0,0,0.2)]"
   const SIDEBAR_ICON_CLASS = "m-0 text-muted-foreground/80"

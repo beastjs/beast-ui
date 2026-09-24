@@ -36,8 +36,15 @@ module
     showArrowRef: RefObject<boolean>;
     contentClassNameRef: RefObject<string | undefined>;
   }
-  const GroupContext = createContext<FluidTooltipGroupContextValue | null>(null);
-  const RootContext = createContext<FluidTooltipRootContextValue | null>(null);
+  // Hot reload re-runs this module, and a fresh createContext() would leave the
+  // already-mounted Group providing a context the new Trigger never reads.
+  // Keeping both contexts on globalThis gives every module instance the same pair.
+  const contexts = ((globalThis as any)[Symbol.for("beast-ui.FluidTooltip.contexts")] ??= {
+    group: createContext<FluidTooltipGroupContextValue | null>(null),
+    root: createContext<FluidTooltipRootContextValue | null>(null),
+  });
+  const GroupContext: ReturnType<typeof createContext<FluidTooltipGroupContextValue | null>> = contexts.group;
+  const RootContext: ReturnType<typeof createContext<FluidTooltipRootContextValue | null>> = contexts.root;
   const tokenStyle = {
     "--fluid-tooltip-surface": "var(--foreground)",
     "--fluid-tooltip-label": "var(--background)",
@@ -46,14 +53,14 @@ module
   function useGroupContext(component: string) {
     const context = use(GroupContext);
     if (!context) {
-      throw new Error(`${component} must be used inside FluidT.Group.`);
+      throw new Error(`${component} must be used inside FluidTooltip.`);
     }
     return context;
   }
   function useRootContext(component: string) {
     const context = use(RootContext);
     if (!context) {
-      throw new Error(`${component} must be used inside FluidT.Root.`);
+      throw new Error(`${component} must be used inside FluidTooltipRoot.`);
     }
     return context;
   }
@@ -137,8 +144,8 @@ component FluidTooltipRoot
 component FluidTooltipTrigger
   props { children, keepOpenOnClick = false, ref=null, ...props }: FluidTooltipTriggerProps & { ref?: Ref<HTMLElement|null> }
   setup
-    const group = useGroupContext("FluidT.Trigger");
-    const root = useRootContext("FluidT.Trigger");
+    const group = useGroupContext("FluidTooltipTrigger");
+    const root = useRootContext("FluidTooltipTrigger");
 
     const payload: FluidTooltipPayload = {
       id: root.id,
@@ -164,7 +171,7 @@ component FluidTooltipTrigger
 component FluidTooltipContent
   props { children, className, showArrow = true, }: FluidTooltipContentProps
   setup
-    const root = useRootContext("FluidT.Content");
+    const root = useRootContext("FluidTooltipContent");
     useLayoutEffect(() => {
       root.contentRef.current = children;
       root.contentClassNameRef.current = className;

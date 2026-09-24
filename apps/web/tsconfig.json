@@ -13,7 +13,7 @@
       }
     ]
   },
-  "include": ["src", "rsbuild.config.ts", "../../packages/registry/ui"],
+  "include": ["src", "rsbuild.config.ts", "../../packages/registry/ui", "../../packages/icons/src"],
   "tsrx": {
     "compiler": "octane/compiler/volar"
   }

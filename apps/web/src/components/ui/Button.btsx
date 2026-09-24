@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { type IconName, Icon } from "@/lib/icons"
+import { type IconName, Icon } from "@beast-ui/icons"
 import type { JSX } from "octane/jsx-runtime"
 import type {OctaneNode} from 'octane'
 
@@ -144,7 +144,7 @@ component Content
       if pending
         Spinner(size={size})
       elseif icon
-        Icon(name={icon} size={BUTTON_ICON_SIZES[size]} className="m-0 shrink-0")
+        Icon(name={icon} size={BUTTON_ICON_SIZES[size]})
     if label !== undefined
       span(className="truncate") #{label}
     | #{children}
@@ -152,7 +152,7 @@ component Content
       if pending
         Spinner(size={size})
       elseif icon
-        Icon(name={icon} size={BUTTON_ICON_SIZES[size]} className="m-0 shrink-0")
+        Icon(name={icon} size={BUTTON_ICON_SIZES[size]})
 
 props { size = "sm", variant = "default", type = "button", href, target, rel, download, referrerPolicy, disabled = false, pending = false, pendingLabel, label, icon, iconPosition = "left", className, id, title, tabIndex, form, name, value, style, onClick, "aria-label": ariaLabel, "aria-describedby": ariaDescribedBy, "aria-pressed": ariaPressed, "aria-current": ariaCurrent, children }: ButtonProps
 

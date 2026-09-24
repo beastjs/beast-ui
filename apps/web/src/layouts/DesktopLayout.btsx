@@ -6,7 +6,7 @@ import Sidebar from "../components/Sidebar.btsx";
 import Container from "../components/Container.btsx";
 
 module
-  const SEPARATOR_CLASS = "relative w-[0.5px] shrink-0 bg-border/40 outline-none transition-colors after:absolute after:inset-y-0 after:-inset-x-1.5 after:content-[''] hover:bg-primary/40 data-[separator=active]:bg-primary/60 data-[separator=focus]:bg-primary/60"
+  const SEPARATOR_CLASS = "relative w-[0.5px] shrink-0 bg-sidebar-border dark:bg-sidebar-border/40 outline-none transition-colors after:absolute after:inset-y-0 after:-inset-x-1.5 after:content-[''] hover:bg-primary/40 data-[separator=active]:bg-primary/60 data-[separator=focus]:bg-primary/60"
 
 props {}:{}
 setup
@@ -24,7 +24,7 @@ setup
 fragment
   div(className='hidden md:block sticky top-0 z-40')
     Topbar(toggleSidebar={toggleCompact} isCompact={isCompact})
-  Group(orientation="horizontal" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged} className="h-[calc(100dvh-var(--topbar-height))] overflow-hidden")
+  Group(orientation="horizontal" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged} className="h-screen -[calc(100dvh-var(--topbar-height))] overflow-hidden")
     Panel(id="sidebar" panelRef={sidebarRef} defaultSize="200px" minSize="200px" maxSize="300px" collapsible collapsedSize="64px" onResize={syncCompact})
       Sidebar(path={path} isCompact={isCompact})
     Separator(aria-label="Resize sidebar" className={SEPARATOR_CLASS})

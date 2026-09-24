@@ -2,5 +2,5 @@ import { type OctaneNode } from "octane";
 import ScrollArea from "./ScrollArea.btsx";
 
 props {children}: {children: OctaneNode}
-main(className='h-[92.5dvh] overflow-hidden min-w-0 border-t-[0.5px] border-border/40')
-  ScrollArea(className='h-[92.5dvh]') #{children}
+main(className='h-screen overflow-hidden min-w-0 border-t-[0.5px] border-border/40 bg-background')
+  ScrollArea(className='h-screen -mt-12') #{children}

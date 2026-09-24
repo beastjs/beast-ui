@@ -7,6 +7,6 @@
     "paths": { "@/*": ["./src/*"] },
     "plugins": [{ "name": "@tsrx/typescript-plugin" }]
   },
-  "include": ["src", "vite.config.ts", "../../packages/registry/ui"],
+  "include": ["src", "vite.config.ts", "../../packages/registry/ui", "../../packages/icons/src"],
   "tsrx": { "compiler": "octane" }
 }

@@ -13,6 +13,7 @@
     "validate": "wrangler deploy --dry-run"
   },
   "dependencies": {
+    "@beast-ui/icons": "workspace:*",
     "@beast-ui/registry": "workspace:*",
     "@octanejs/base-ui": "0.1.55",
     "@octanejs/resizable-panels": "^0.0.13",

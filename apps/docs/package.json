@@ -10,6 +10,7 @@
     "typecheck": "tsrx-tsc --noEmit"
   },
   "dependencies": {
+    "@beast-ui/icons": "workspace:*",
     "@beast-ui/registry": "workspace:*",
     "@hugeicons/core-free-icons": "^4.3.5",
     "beast-tsrx": "0.3.2",

@@ -1,4 +1,6 @@
+import { createElement } from "octane";
 import { COPY_FAILED_MESSAGE, useCopy } from "../hooks/use-copy";
+import { Icon } from "@beast-ui/icons";
 import { cn } from "../lib/utils";
 import AnimatedIcon from "./animated-icon.btsx";
 
@@ -25,8 +27,8 @@ button(
   ~ )
   AnimatedIcon(
     ~ active={copied}
-    ~ activeIcon={Icon(name="copied" className={cn("size-4 text-content-subtle will-change-transform", iconClassName)}) }
-    ~ idleIcon={Icon(name="copy" className={cn("size-4 text-content-subtle transition-colors duration-200 ease-out will-change-transform group-hover:text-content", iconClassName)})}
+    ~ activeIcon={createElement(Icon, { name: "copied", className: cn("size-4 text-content-subtle will-change-transform", iconClassName) })}
+    ~ idleIcon={createElement(Icon, { name: "copy", className: cn("size-4 text-content-subtle transition-colors duration-200 ease-out will-change-transform group-hover:text-content", iconClassName) })}
     ~ )
   span.sr-only(role="status")
     if status === "idle"

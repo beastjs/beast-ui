@@ -2,7 +2,7 @@ import { createContext, use, useEffect, useState } from 'octane'
 import type { OctaneNode } from 'octane'
 import { applyTheme, getPreferredTheme, saveTheme } from '@/lib/theme'
 import type { Theme } from '@/lib/theme'
-import {Icon} from "@/lib/icons";
+import {Icon} from "@beast-ui/icons";
 
 
 component ThemeToggle

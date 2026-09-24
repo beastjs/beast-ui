@@ -1,4 +1,4 @@
-import type { IconName } from '@/lib/icons/types'
+import type { IconName } from '@beast-ui/icons'
 import { componentTree, REGISTRY_URL, REPOSITORY_URL, type CatalogItem } from '@/lib/catalog'
 import { previews } from '@/previews'
 

@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { createInterface, type Interface } from 'node:readline/promises'
 import { paint, symbols } from '../../packages/cli/src/utils/ui.ts'
@@ -63,10 +63,10 @@ export async function confirm(prompt: Interface, label: string, initial: boolean
   }
 }
 
-/** Icon names the showcase sidebar can draw. */
+/** Icon names the showcase sidebar can draw: one per .svg in packages/icons/svg. */
 export async function iconNames(root: string): Promise<string[]> {
-  const source = await readFile(path.join(root, 'apps/web/src/lib/icons/icons.ts'), 'utf8')
-  return [...source.matchAll(/^ {2}'?([a-z][a-z0-9-]*)'?: ?\{/gm)].map((match) => match[1])
+  const files = await readdir(path.join(root, 'packages/icons/svg'))
+  return files.filter((file) => file.endsWith('.svg')).map((file) => file.slice(0, -4)).sort()
 }
 
 /** Runs a command quietly, showing its output only when it fails. */

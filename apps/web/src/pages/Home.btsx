@@ -11,10 +11,18 @@ module
 
 props {}:{}
 div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
+  section(className='grid grid-cols-1 md:grid-cols-2 gap-8 my-8 rounded-3xl dark:bg-sidebar-accent/50')
+    div(className="flex items-center justify-center h-64 w-140 bg-surface rounded-xl border border-sidebar-border")
+    // div(className="flex items-center justify-center size-64 bg-surface rounded-xl border border-sidebar-border")
+
   section(aria-labelledby="intro-title")
     p(className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground") The Beast component registry
     h1#intro-title(className="max-w-2xl text-4xl font-medium leading-[1.06] tracking-[-0.04em] md:text-5xl") Your components. Your source.
     p(className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground") Accessible UI for Beast and Octane. Add the source to your project, make it your own, and build from there.
+
+  section(className='h-96 grid grid-cols-1 md:grid-cols-2 gap-8 my-8 dark:bg-sidebar-accent/50')
+    div(className="flex items-center justify-center h-96 w-120 bg-surface dark:bg-card rounded-xl border dark:border-chart-5 border-sidebar-border")
+    // div(className="flex items-center justify-center size-64 bg-surface dark:bg-card rounded-xl border dark:border-chart-5/0 border-sidebar-border")
   section(className="mt-12" aria-labelledby="start-title")
     h2#start-title(className="text-xl font-medium tracking-tight") Get started
     p(className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground") Start with a Beast + Octane app using Tailwind CSS v4. In that app, run:
