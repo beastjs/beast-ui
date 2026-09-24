@@ -193,16 +193,11 @@ bun run registry:deploy   # build, then deploy (needs a Cloudflare login)
 `wrangler deploy` runs the registry build first (`build.command` in
 `apps/registry/wrangler.jsonc`), so every deploy ships the current items.
 
-If the Worker is connected to this repository through Cloudflare Workers Builds,
-set its root directory to `apps/registry`, keep the deploy command
-`npx wrangler deploy`, and add the build variable `BUN_VERSION=1.4.0`; older Bun
-releases cannot read `bun.lock`. Use either Workers Builds or the CI job below
-to deploy, not both.
-
 CI deploys from `main` after the checks pass, once the repository has an
 Actions variable `CLOUDFLARE_ACCOUNT_ID` and a secret `CLOUDFLARE_API_TOKEN`
 (a token with the *Edit Cloudflare Workers* permission). Until both are set,
-the deploy job is skipped. The Worker is served at
+the deploy job is skipped. Keep Cloudflare's Git integration (Workers Builds)
+disconnected for this Worker, so each change to `main` deploys only once. The Worker is served at
 `https://beast-ui-registry.beastjs.workers.dev`, the CLI's default registry. To
 use your own domain, add a `routes` entry to `apps/registry/wrangler.jsonc` and
 update `DEFAULT_REGISTRY` in `packages/cli/src/utils/config.ts`.
