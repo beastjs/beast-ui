@@ -67,7 +67,8 @@ describe('registry distribution', () => {
     expect(button.registryDependencies).toEqual(['utils', 'theme'])
     await writeFile(path.join(output, 'stale.json'), '{}')
     await buildRegistry(root, output)
-    expect((await readdir(output)).sort()).toEqual(['button-bouncy.json', 'button-ripple.json', 'button.json', 'call-chip.json', 'registry.json', 'scrubfield.json', 'squishy.json', 'theme.json', 'utils.json'])
+    const catalog = JSON.parse(await readFile(path.join(root, 'registry.json'), 'utf8')) as { items: { name: string }[] }
+    expect((await readdir(output)).sort()).toEqual([...catalog.items.map((entry) => `${entry.name}.json`), 'registry.json'].sort())
     expect(await readFile(path.join(output, 'button.json'), 'utf8')).toBe(before)
   })
 
@@ -258,7 +259,8 @@ describe('registry distribution', () => {
     const button = lines.findIndex((line) => line.startsWith('button '))
     expect(lines[button + 1]).toStartWith('  button-ripple ')
     expect(lines[button + 2]).toStartWith('  button-bouncy ')
-    expect(lines.filter((line) => line.startsWith('  '))).toHaveLength(2)
+    const variants = (await fetchCatalog(await registryServer())).items.filter((entry) => entry.meta?.variantOf !== undefined)
+    expect(lines.filter((line) => line.startsWith('  '))).toHaveLength(variants.length)
   })
 
   test('the CLI ignores registry fields it does not know', async () => {
