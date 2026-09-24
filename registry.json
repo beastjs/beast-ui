@@ -87,7 +87,7 @@
       "title": "Call Chip",
       "description": "A compact tool-call status with progress, elapsed time, and retry controls.",
       "dependencies": [
-        "@hugeicons/core-free-icons@^4.3.4"
+        "@hugeicons/core-free-icons@^4.3.5"
       ],
       "files": [
         {

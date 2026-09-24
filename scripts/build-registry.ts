@@ -4,6 +4,22 @@ import { fileURLToPath } from 'node:url'
 import { registrySchema, type Registry } from '@beast-ui/registry/schema'
 import { safePath } from '@beast-ui/registry/node'
 
+const sourceRoots = { 'registry:ui': 'ui', 'registry:lib': 'lib', 'registry:style': 'styles' } as const
+const relativeImport = /(?:\bfrom\s*|\bimport\s*\(?\s*|@import\s+(?:url\(\s*)?)["'](\.{1,2}\/[^"']*)["']/g
+
+// A relative import that climbs out of its type's install root would point at a
+// directory the consuming project does not have. Cross-root imports must use an alias.
+export function assertContainedImports(file: { path: string; type: keyof typeof sourceRoots; content: string }) {
+  const kind = sourceRoots[file.type]
+  const prefix = [`packages/registry/${kind}/`, `${kind}/`].find((value) => file.path.startsWith(value)) ?? ''
+  const directory = path.posix.dirname(file.path.slice(prefix.length))
+  for (const [, specifier] of file.content.matchAll(relativeImport)) {
+    if (path.posix.normalize(path.posix.join(directory, specifier)).startsWith('../')) {
+      throw new Error(`${file.path} imports ${specifier}, which leaves the ${kind} install root. Use an alias such as @/lib/utils.`)
+    }
+  }
+}
+
 export async function buildRegistry(root: string, output: string): Promise<Registry> {
   const registry = registrySchema.parse(JSON.parse(await readFile(path.join(root, 'registry.json'), 'utf8')))
   const items = new Map(registry.items.map((item) => [item.name, item]))
@@ -24,7 +40,9 @@ export async function buildRegistry(root: string, output: string): Promise<Regis
   // Read and validate the entire catalog before replacing any published output.
   for (const item of registry.items) {
     for (const file of item.files) {
-      file.content = await readFile(await safePath(root, file.path), 'utf8')
+      const content = await readFile(await safePath(root, file.path), 'utf8')
+      assertContainedImports({ path: file.path, type: file.type, content })
+      file.content = content
     }
   }
   await rm(output, { recursive: true, force: true })

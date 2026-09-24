@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { buildRegistry } from '../scripts/build-registry.ts'
+import { assertContainedImports, buildRegistry } from '../scripts/build-registry.ts'
 import { addComponents, planFiles } from '../packages/cli/src/commands/add.ts'
 import { initConfig, readConfig } from '../packages/cli/src/utils/config.ts'
 import { fetchComponent, resolveItems } from '../packages/cli/src/utils/registry.ts'
@@ -69,7 +69,7 @@ describe('registry distribution', () => {
     const cwd = await project()
     await initConfig(cwd, await registryServer(), 'bun')
     const result = await addComponents(['call-chip'], { cwd, skipInstall: true })
-    expect(result.dependencies).toEqual(['@hugeicons/core-free-icons@^4.3.4'])
+    expect(result.dependencies).toEqual(['@hugeicons/core-free-icons@^4.3.5'])
     expect(await readFile(path.join(cwd, 'src/components/ui/call-chip.btsx'), 'utf8'))
       .toBe(await readFile(path.join(root, 'packages/registry/ui/call-chip.btsx'), 'utf8'))
   })
@@ -177,6 +177,21 @@ describe('registry distribution', () => {
     expect((await readConfig(cwd)).packageManager).toBe('bun')
     await expect(initConfig(cwd, 'http://localhost:9999/r')).rejects.toThrow('EEXIST')
     expect((await readConfig(cwd)).registry).toBe('http://localhost:5173/r')
+  })
+
+  test('rejects relative imports that leave their install root', async () => {
+    const ui = (content: string) => ({ path: 'packages/registry/ui/button.btsx', type: 'registry:ui' as const, content })
+    expect(() => assertContainedImports(ui('import { cn } from "../lib/utils"'))).toThrow('leaves the ui install root')
+    expect(() => assertContainedImports(ui("const lazy = import('../lib/lazy.ts')"))).toThrow('leaves the ui install root')
+    expect(() => assertContainedImports({ path: 'styles/theme.css', type: 'registry:style', content: '@import "../base.css";' })).toThrow('styles install root')
+    expect(() => assertContainedImports(ui('import { cn } from "@/lib/utils"\nimport "./parts/icon.btsx"'))).not.toThrow()
+    expect(() => assertContainedImports({ path: 'packages/registry/lib/internal/value.ts', type: 'registry:lib', content: 'export * from "../utils.ts"' })).not.toThrow()
+    const cwd = await temp()
+    await mkdir(path.join(cwd, 'ui'))
+    await writeFile(path.join(cwd, 'ui/leak.btsx'), 'import { cn } from "../lib/utils"')
+    const leak = { name: 'test', homepage: 'http://localhost', items: [{ name: 'leak', type: 'registry:ui', files: [{ path: 'ui/leak.btsx', type: 'registry:ui' }] }] }
+    await writeFile(path.join(cwd, 'registry.json'), JSON.stringify(leak))
+    await expect(buildRegistry(cwd, path.join(cwd, 'output'))).rejects.toThrow('leaves the ui install root')
   })
 
   test('invalid catalogs do not replace a previous build', async () => {

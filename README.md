@@ -33,7 +33,8 @@ bun run check    # typecheck + test + build
 3. Add an entry to `registry.json` with its `dependencies` (npm) and
    `registryDependencies` (other items). The build fails on unknown names,
    duplicate names, or dependency cycles.
-4. Run `bun run check`.
+4. Run `bun run check`. The build rejects relative imports that leave a file's
+   install root, such as `../lib/utils` from a UI file.
 
 The installer strips `packages/registry/ui/`, `packages/registry/lib/`, or
 `packages/registry/styles/` from each file's path according to its type. The short
@@ -74,6 +75,10 @@ modified file without `--overwrite`.
 The consuming project needs Tailwind CSS v4, a `@/*` alias resolving to `src/*`
 in both TypeScript and the bundler, and `src/styles/theme.css` imported after
 `@import "tailwindcss"`.
+
+`scrubfield` and `squishy` are built on `@octanejs/motion` and render on the
+client only; Octane's server renderer does not yet provide the context API that
+motion uses.
 
 For example, in `src/style.css`:
 
