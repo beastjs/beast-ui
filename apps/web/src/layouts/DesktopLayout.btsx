@@ -1,8 +1,9 @@
 import { useState } from "octane";
 import { Outlet, useLocation } from "@octanejs/tanstack-router";
 import { Group, Panel, Separator, useDefaultLayout, usePanelRef } from "@octanejs/resizable-panels";
-import Topbar from "@/components/Topbar.btsx";
-import Sidebar from "@/components/Sidebar.btsx";
+import Topbar from "../components/Topbar.btsx";
+import Sidebar from "../components/Sidebar.btsx";
+import Container from "../components/Container.btsx";
 
 module
   const SEPARATOR_CLASS = "relative w-[0.5px] shrink-0 bg-border/40 outline-none transition-colors after:absolute after:inset-y-0 after:-inset-x-1.5 after:content-[''] hover:bg-primary/40 data-[separator=active]:bg-primary/60 data-[separator=focus]:bg-primary/60"
@@ -28,5 +29,5 @@ fragment
       Sidebar(path={path} isCompact={isCompact})
     Separator(aria-label="Resize sidebar" className={SEPARATOR_CLASS})
     Panel(id="content" minSize="30%")
-      main(className='min-w-0 border-t-[0.5px] border-border/40')
+      Container
         Outlet
