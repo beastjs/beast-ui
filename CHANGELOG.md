@@ -14,6 +14,10 @@ All notable changes to `beast-ui` will be recorded here.
   preview is compiled and typechecked before it is written. With no arguments
   it covers components whose preview is missing or still the starter.
   `registry:import` offers to run it for the components it just added.
+- `docs/adding-components.md`: a usage guide for both commands. It covers
+  answer conventions, how to write components the tools understand, every
+  prompt, a worked example, and troubleshooting. Both commands accept
+  `--help`, and Ctrl+C stops cleanly, keeping what is already written.
 - Tests compile and typecheck every showcase preview; the web typecheck does
   not read `.btsx` files.
 - `bun run registry:import`: an interactive importer for components dropped

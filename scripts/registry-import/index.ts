@@ -1,18 +1,18 @@
 import { execFile } from 'node:child_process'
 import { mkdir, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { itemNameSchema } from '@beast-ui/registry/schema'
 import { paint, symbols } from '../../packages/cli/src/utils/ui.ts'
-import { ask, confirm, fail, iconNames, list, runStep, say } from '../lib/prompt.ts'
+import { ask, confirm, createPrompt, fail, iconNames, list, printHelp, runStep, say, wantsHelp } from '../lib/prompt.ts'
 import { previewSession } from '../preview-gen/session.ts'
 import { analyzeComponent, parseImports, toItemName, toTitle, type CatalogEntry, type ParsedImport } from './analyze.ts'
 import { applyComponent, hasPreview, missingPackages, paths, readRegistry, registeredIcon, removeStaged, type ComponentPlan } from './apply.ts'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
-const stagingDir = path.resolve(root, process.argv[2] ?? 'staging')
+const args = process.argv.slice(2)
+const stagingDir = path.resolve(root, args.find((arg) => !arg.startsWith('-')) ?? 'staging')
 const run = promisify(execFile)
 const DEPENDENCY = /^(?:@[a-z0-9._-]+\/)?[a-z0-9][a-z0-9._-]*(?:@[~^<>=0-9a-zA-Z.*|+ -]+)?$/
 
@@ -71,8 +71,34 @@ function orderStaged(files: { name: string; source: string }[], catalog: Map<str
   return ordered
 }
 
+const HELP = [
+  `${paint('bold', 'bun run registry:import')} ${paint('dim', '[dir]')}`,
+  '',
+  'Adds the .btsx components in a staging directory (default: staging/) to the',
+  'registry, one at a time, asking for the details registry.json needs.',
+  '',
+  paint('dim', 'For each file it asks'),
+  '  Name, Title, Description     catalog entry; name defaults to the file name',
+  '  Variant of                   base component, or - for none',
+  '  Registry dependencies        items it imports, e.g. button, utils, theme',
+  '  npm dependencies             packages with ranges, e.g. clsx@^2.1.1',
+  '  Showcase icon                sidebar icon in apps/web',
+  '  Write it?                    y to write, s to skip the file, q to stop',
+  '',
+  paint('dim', 'Answers'),
+  '  Enter accepts the value in parentheses. Lists are comma- or space-separated;',
+  '  - means none. Ctrl+C stops; components already written are kept.',
+  '',
+  paint('dim', 'Afterwards'),
+  '  Installs new packages, rebuilds and validates the registry, then offers to',
+  '  write previews with showcase:preview. Written files leave staging/.',
+  '',
+  `Guide: ${paint('cyan', 'docs/adding-components.md')}`,
+]
+
 async function main(): Promise<void> {
-  if (!process.stdin.isTTY) throw new Error('registry:import is interactive. Run it in a terminal.')
+  if (wantsHelp(args)) { printHelp(HELP); return }
+  if (!process.stdin.isTTY) throw new Error('registry:import is interactive. Run it in a terminal, or pass --help.')
   await mkdir(stagingDir, { recursive: true })
   const relativeStaging = path.relative(root, stagingDir) || '.'
   const entries = (await readdir(stagingDir)).filter((file) => !file.startsWith('.')).sort()
@@ -94,7 +120,7 @@ async function main(): Promise<void> {
   const queue = orderStaged(staged, initialCatalog).map((entry) => staged.find((file) => file.name === entry.name)!)
   const ranges = await workspaceRanges()
   const icons = await iconNames(root)
-  const prompt = createInterface({ input: process.stdin, output: process.stdout })
+  const prompt = createPrompt()
   const written: string[] = []
   let packagesChanged = false
 

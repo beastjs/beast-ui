@@ -90,8 +90,11 @@ export function analyzeProps(root: string, name: string): ComponentProps {
   const module = sourceFile(file)
   const moduleSymbol = module && checker.getSymbolAtLocation(module)
   const component = moduleSymbol && checker.getExportsOfModule(moduleSymbol).find((symbol) => symbol.getName() === 'default')
-  const parameter = component && checker.getTypeOfSymbol(component).getCallSignatures()[0]?.getParameters()[0]
-  if (!parameter) throw new Error(`Cannot read the props of ${name}.`)
+  const signature = component && checker.getTypeOfSymbol(component).getCallSignatures()[0]
+  if (!signature) throw new Error(`Cannot read the props of ${name}: it has no default export component.`)
+  const parameter = signature.getParameters()[0]
+  // A component without a props declaration takes no props.
+  if (!parameter) return { props: [], acceptsChildren: false }
   const propsType = checker.getTypeOfSymbol(parameter)
 
   const declaration = parse(readFileSync(file, 'utf8'), path.basename(file)).declarations.find((entry) => entry.kind === 'props')

@@ -165,7 +165,14 @@ export async function previewSession(root: string, prompt: Interface, names: str
     const status = await previewStatus(root, name, item.description ?? '')
     if (status === 'custom' && !(await confirm(prompt, `${paths.preview(name)} is hand-written. Replace it?`, false))) { say(); continue }
 
-    const info = analyzeProps(root, name)
+    let info: ComponentProps
+    try {
+      info = analyzeProps(root, name)
+    } catch (error) {
+      fail(`${error instanceof Error ? error.message : String(error)} Skipped.`)
+      say()
+      continue
+    }
     showProps(info)
 
     for (;;) {

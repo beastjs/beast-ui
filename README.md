@@ -24,41 +24,41 @@ bun run check    # typecheck + test + build
 | `scripts/build-registry.ts` | Compiles `registry.json` into `apps/registry/public/r/` payloads. |
 | `scripts/registry-import/` | `bun run registry:import`: wires staged components into the registry and showcase. |
 | `scripts/preview-gen/` | `bun run showcase:preview`: generates and typechecks showcase previews. |
+| `docs/adding-components.md` | Usage guide for `registry:import` and `showcase:preview`. |
 | `tests/registry.test.ts` | End-to-end coverage of the build, the resolver, and the installer. |
 
 ## Adding a component to the registry
 
-### From a staging directory
-
-Drop finished `.btsx` files into `staging/` at the repository root (it is
-git-ignored) and run:
+The fastest path is the two interactive commands. The full walkthrough is in
+**[docs/adding-components.md](docs/adding-components.md)**: every prompt, the
+conventions they rely on, a worked example, and troubleshooting.
 
 ```bash
-bun run registry:import            # or: bun run registry:import path/to/dir
+# 1. Put finished .btsx files in staging/ (git-ignored), then:
+bun run registry:import         # adds each one to the registry, then offers to write its preview
+bun run showcase:preview        # writes any missing or starter previews
+bun run showcase:preview button # regenerates one component's preview
+
+# 2. Check the pages, then everything:
+bun run dev
+bun run check
 ```
 
-The importer walks the directory one component at a time, dependencies first,
-until no `.btsx` files are left. For each file it:
+- **`registry:import`** goes through `staging/` one file at a time,
+  dependencies first. It:
+  - maps imports to registry and npm dependencies;
+  - rewrites paths that would break once installed;
+  - asks for the name, title, description, base component, dependencies, and
+    icon;
+  - writes the source, the `registry.json` entry, new packages, and a
+    registered preview, then removes the file from `staging/`.
+- **`showcase:preview`** reads the component's props with the TypeScript
+  checker. It builds a preview from your answers: a controlled value or press
+  counter, a row per union prop, and disabled and custom examples. It compiles
+  and typechecks the preview before writing it.
 
-- lists the imports and what each one maps to: `octane` (the runtime), `utils`,
-  another registry component, an npm package, or a path that cannot resolve in
-  a user's project, which it asks you to confirm;
-- rewrites paths that would break once installed: `../lib/utils` becomes
-  `@/lib/utils`, and `@/components/ui/button` becomes `./button.btsx`;
-- prompts for the name, title, description, base component (for a variant),
-  registry dependencies, npm dependencies, and showcase icon, pre-filled from
-  the file name and imports. Ranges for npm packages come from the workspace's
-  `package.json` files, or from npm for new packages;
-- shows the plan and writes it on `y`: the source in `packages/registry/ui/`,
-  the `registry.json` entry, missing packages in
-  `packages/registry/package.json`, and a starter preview registered in
-  `apps/web/src/previews/index.ts`. The staged file is then deleted. Answer `s`
-  to leave a file for later, or `q` to stop.
-
-Afterwards it runs `bun install` if packages were added, then rebuilds and
-validates the registry, and offers to write each new component's preview with
-`bun run showcase:preview` (see [Component showcase](#component-showcase)).
-Check the result with `bun run dev`, then run `bun run check`.
+Both accept `--help`. Enter accepts a default, `-` means none, and Ctrl+C stops
+without touching the component in progress.
 
 ### By hand
 
@@ -244,33 +244,10 @@ registered in `apps/web/src/previews/index.ts`; a test fails until both exist.
 Preview files end in `-preview` because Beast names a file's component after
 the file, and a preview named `button.btsx` would shadow the `Button` it imports.
 
-### Generating a preview
-
-```bash
-bun run showcase:preview             # components with a missing or starter preview
-bun run showcase:preview squishy     # redo a named component's preview
-```
-
-The generator reads the component's props with the TypeScript checker,
-following its imports, so cva variants and props inherited from a base
-component resolve to their real types. It lists them and then asks:
-
-- **State:** a controlled value such as `checked` with `onChange(boolean)`
-  becomes `useState` with a status line; otherwise it offers to count presses
-  on `onClick`.
-- **Rows:** one row per string-union prop (such as `variant`, `size`, or
-  `status`), with the values you choose.
-- **Examples:** props shared by every example, a disabled example when the
-  component has `disabled`, and any others you type as Beast attributes
-  (`hoverScale={1.2} stretch={90}`).
-- **Note and icon:** the note under the preview (the registry description by
-  default), and the sidebar icon when the component is not registered yet.
-
-Before writing, it shows the file, compiles it, and typechecks it against the
-component's props, so a value such as `variant="nope"` is reported with the
-allowed values. Answer `r` to redo the answers. A test runs the same check on
-every committed preview, because the web typecheck does not read `.btsx`
-files.
+To write or regenerate a preview, run `bun run showcase:preview [name...]`.
+See [Writing previews](docs/adding-components.md#writing-previews). A test
+compiles and typechecks every committed preview, because the web typecheck
+does not read `.btsx` files.
 
 ### Deploying the showcase
 

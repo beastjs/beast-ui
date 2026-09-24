@@ -1,13 +1,39 @@
 import { spawn } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import type { Interface } from 'node:readline/promises'
+import { createInterface, type Interface } from 'node:readline/promises'
 import { paint, symbols } from '../../packages/cli/src/utils/ui.ts'
 
 export const say = (text = '') => { process.stdout.write(`${text}\n`) }
 export const fail = (text: string) => say(`    ${paint('red', symbols.fail)} ${text}`)
 /** Splits a comma- or space-separated answer; `-` means none. */
 export const list = (answer: string): string[] => (answer === '-' ? [] : answer.split(/[\s,]+/).filter(Boolean))
+
+/**
+ * The terminal prompt. Ctrl+C stops at the current question: anything already
+ * written stays, and nothing of the component being asked about is written.
+ */
+export function createPrompt(): Interface {
+  const prompt = createInterface({ input: process.stdin, output: process.stdout })
+  prompt.on('SIGINT', () => {
+    say()
+    say()
+    say(`  ${paint('dim', 'Stopped. Files already written are kept; nothing else was changed.')}`)
+    say()
+    prompt.close()
+    process.exit(130)
+  })
+  return prompt
+}
+
+export const wantsHelp = (args: string[]): boolean => args.includes('--help') || args.includes('-h')
+
+/** Prints a command's help: a heading line, then pre-formatted body lines. */
+export function printHelp(lines: string[]): void {
+  say()
+  for (const line of lines) say(line ? `  ${line}` : '')
+  say()
+}
 
 export interface AskOptions {
   initial?: string
