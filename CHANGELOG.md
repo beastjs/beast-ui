@@ -10,6 +10,9 @@ All notable changes to `beast-ui` will be recorded here.
 - `apps/registry`: a Cloudflare Worker that serves the built registry, with
   CORS and revalidation headers, and a CI job that deploys it from `main` once
   Cloudflare credentials are configured.
+- The CLI defaults to the hosted registry at
+  `https://beast-ui-registry.beastjs.workers.dev/r`: `init` no longer requires
+  `--registry`, and `list` works without a config.
 - Registry build (`scripts/build-registry.ts`) that validates the catalog and
   publishes per-item payloads to `apps/registry/public/r/`.
 - `beast-ui` CLI with `init`, `list`, and `add`.

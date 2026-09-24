@@ -4,7 +4,7 @@ import { Command, Option } from 'commander'
 import type { Config } from '@beast-ui/registry/schema'
 import packageJson from '../package.json' with { type: 'json' }
 import { addComponents } from './commands/add.ts'
-import { initConfig, readConfig } from './utils/config.ts'
+import { DEFAULT_REGISTRY, findConfig, initConfig } from './utils/config.ts'
 import { fetchCatalog } from './utils/registry.ts'
 
 interface InitOptions { cwd: string; registry: string; packageManager?: Config['packageManager'] }
@@ -19,7 +19,7 @@ const program = new Command()
 program.command('init')
   .description('Create beast-ui.json in an existing Beast project')
   .option('-c, --cwd <path>', 'Target project directory', '.')
-  .requiredOption('-r, --registry <url>', 'Registry directory URL, e.g. http://localhost:5173/r')
+  .option('-r, --registry <url>', 'Registry directory URL', DEFAULT_REGISTRY)
   .addOption(new Option('--package-manager <name>', 'Package manager (detected from lockfile by default)').choices(['bun', 'npm', 'pnpm', 'yarn']))
   .action(async (options: InitOptions) => {
     await initConfig(path.resolve(options.cwd), options.registry, options.packageManager)
@@ -32,7 +32,7 @@ program.command('list')
   .option('-c, --cwd <path>', 'Target project directory', '.')
   .option('-r, --registry <url>', 'Override the configured registry URL')
   .action(async (options: ListOptions) => {
-    const registry = options.registry ?? (await readConfig(path.resolve(options.cwd))).registry
+    const registry = options.registry ?? (await findConfig(path.resolve(options.cwd)))?.registry ?? DEFAULT_REGISTRY
     const catalog = await fetchCatalog(registry)
     for (const item of catalog.items) console.log(`${item.name.padEnd(16)} ${item.description ?? item.type}`)
   })

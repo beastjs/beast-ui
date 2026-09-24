@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry.json",
   "name": "beast-ui",
-  "homepage": "http://localhost:5173",
+  "homepage": "https://beast-ui-registry.beastjs.workers.dev",
   "items": [
     {
       "name": "utils",

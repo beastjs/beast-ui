@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { assertContainedImports, buildRegistry } from '../scripts/build-registry.ts'
 import { addComponents, installDependencies, planFiles } from '../packages/cli/src/commands/add.ts'
-import { initConfig, readConfig } from '../packages/cli/src/utils/config.ts'
+import { DEFAULT_REGISTRY, initConfig, readConfig } from '../packages/cli/src/utils/config.ts'
 import { fetchComponent, resolveItems } from '../packages/cli/src/utils/registry.ts'
 import { registryItemSchema, type RegistryItem } from '@beast-ui/registry/schema'
 
@@ -183,6 +183,13 @@ describe('registry distribution', () => {
     process.env.PATH = await temp()
     cleanup.push(() => { process.env.PATH = original })
     await expect(installDependencies(cwd, 'pnpm', ['clsx@^2.1.1'])).rejects.toThrow('Could not run pnpm')
+  })
+
+  test('init defaults to the hosted registry', async () => {
+    const cwd = await project()
+    expect((await initConfig(cwd, undefined, 'bun')).registry).toBe(DEFAULT_REGISTRY)
+    expect((await readConfig(cwd)).registry).toBe('https://beast-ui-registry.beastjs.workers.dev/r')
+    await expect(readConfig(await project())).rejects.toThrow('Missing beast-ui.json. Run init first.')
   })
 
   test('init detects the package manager and preserves existing configuration', async () => {
