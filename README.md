@@ -23,6 +23,7 @@ bun run check    # typecheck + test + build
 | `apps/registry/` | The Cloudflare Worker that serves the registry in production. |
 | `scripts/build-registry.ts` | Compiles `registry.json` into `apps/registry/public/r/` payloads. |
 | `scripts/registry-import/` | `bun run registry:import`: wires staged components into the registry and showcase. |
+| `scripts/preview-gen/` | `bun run showcase:preview`: generates and typechecks showcase previews. |
 | `tests/registry.test.ts` | End-to-end coverage of the build, the resolver, and the installer. |
 
 ## Adding a component to the registry
@@ -55,8 +56,9 @@ until no `.btsx` files are left. For each file it:
   to leave a file for later, or `q` to stop.
 
 Afterwards it runs `bun install` if packages were added, then rebuilds and
-validates the registry. Fill in each starter preview, check it with
-`bun run dev`, and run `bun run check`.
+validates the registry, and offers to write each new component's preview with
+`bun run showcase:preview` (see [Component showcase](#component-showcase)).
+Check the result with `bun run dev`, then run `bun run check`.
 
 ### By hand
 
@@ -236,11 +238,39 @@ directory.
 ## Component showcase
 
 `apps/web` renders every `registry:ui` item from `registry.json` at
-`/components/<name>`, with navigation built from the same catalog. When you add
-a component, add its preview as `apps/web/src/previews/<name>-preview.btsx` and
-register it in `apps/web/src/previews/index.ts`; a test fails until both exist.
+`/components/<name>`, with navigation built from the same catalog. Each
+component needs a preview at `apps/web/src/previews/<name>-preview.btsx`,
+registered in `apps/web/src/previews/index.ts`; a test fails until both exist.
 Preview files end in `-preview` because Beast names a file's component after
 the file, and a preview named `button.btsx` would shadow the `Button` it imports.
+
+### Generating a preview
+
+```bash
+bun run showcase:preview             # components with a missing or starter preview
+bun run showcase:preview squishy     # redo a named component's preview
+```
+
+The generator reads the component's props with the TypeScript checker,
+following its imports, so cva variants and props inherited from a base
+component resolve to their real types. It lists them and then asks:
+
+- **State:** a controlled value such as `checked` with `onChange(boolean)`
+  becomes `useState` with a status line; otherwise it offers to count presses
+  on `onClick`.
+- **Rows:** one row per string-union prop (such as `variant`, `size`, or
+  `status`), with the values you choose.
+- **Examples:** props shared by every example, a disabled example when the
+  component has `disabled`, and any others you type as Beast attributes
+  (`hoverScale={1.2} stretch={90}`).
+- **Note and icon:** the note under the preview (the registry description by
+  default), and the sidebar icon when the component is not registered yet.
+
+Before writing, it shows the file, compiles it, and typechecks it against the
+component's props, so a value such as `variant="nope"` is reported with the
+allowed values. Answer `r` to redo the answers. A test runs the same check on
+every committed preview, because the web typecheck does not read `.btsx`
+files.
 
 ### Deploying the showcase
 

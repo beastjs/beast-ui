@@ -63,7 +63,8 @@ const serializeItem = (item: RegistryItem): Record<string, unknown> => {
   }
 }
 
-export function previewSource(plan: ComponentPlan): string {
+/** The starter preview the importer writes: the component and its description. */
+export function previewSource(plan: Pick<ComponentPlan, 'name' | 'description'>): string {
   const component = toPascal(plan.name)
   return [
     `import ${component} from "@beast-ui/registry/ui/${plan.name}";`,
@@ -76,8 +77,15 @@ export function previewSource(plan: ComponentPlan): string {
   ].join('\n')
 }
 
-export function registerPreview(index: string, plan: ComponentPlan): string {
-  const key = /^[a-z][a-z0-9]*$/.test(plan.name) ? plan.name : `'${plan.name}'`
+const previewKey = (name: string) => (/^[a-z][a-z0-9]*$/.test(name) ? name : `'${name}'`)
+
+/** The icon a component is registered with in the previews index, if it is registered. */
+export function registeredIcon(index: string, name: string): string | undefined {
+  return new RegExp(`^  ${previewKey(name).replace(/[-']/g, (char) => `\\${char}`)}: \\{ icon: '([a-z0-9-]+)'`, 'm').exec(index)?.[1]
+}
+
+export function registerPreview(index: string, plan: Pick<ComponentPlan, 'name' | 'icon'>): string {
+  const key = previewKey(plan.name)
   const line = `  ${key}: { icon: '${plan.icon}', component: lazy(() => import('./${plan.name}-preview.btsx')) },`
   const existing = new RegExp(`^  ${key.replace(/[-']/g, (char) => `\\${char}`)}: .*$`, 'm')
   if (existing.test(index)) return index.replace(existing, line)
