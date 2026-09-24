@@ -1,13 +1,22 @@
 name: Publish CLI
 
-# Push a tag named cli-v<version>, matching packages/cli/package.json, to release.
+# Publishes @beastjs/cli when a merge to main raises the version in
+# packages/cli/package.json, then tags and releases it as cli-v<version>.
 on:
   push:
-    tags: ['cli-v*']
+    branches: [main]
+    paths:
+      - packages/cli/package.json
+      - .github/workflows/publish-cli.yml
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # create the cli-v<version> tag and release
   id-token: write # npm provenance
+
+concurrency:
+  group: publish-cli
+  cancel-in-progress: false
 
 jobs:
   publish:
@@ -17,35 +26,51 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.0
-
       - uses: actions/setup-node@v5
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Check the tag matches the package version
+      - name: Check whether this version is already on npm
+        id: version
         run: |
           version=$(node -p "require('./packages/cli/package.json').version")
-          if [ "$GITHUB_REF_NAME" != "cli-v$version" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match packages/cli version $version"
-            exit 1
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ -n "$(npm view "@beastjs/cli@$version" version 2>/dev/null)" ]; then
+            echo "@beastjs/cli@$version is already published; nothing to do."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - if: steps.version.outputs.publish == 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: Install dependencies
+        if: steps.version.outputs.publish == 'true'
+        run: bun install --frozen-lockfile
+
       - name: Check
+        if: steps.version.outputs.publish == 'true'
         run: bun run check
 
       # bun pm pack builds the CLI and rewrites workspace: dependency ranges.
       - name: Pack
+        if: steps.version.outputs.publish == 'true'
         working-directory: packages/cli
         run: bun pm pack --destination "$RUNNER_TEMP/pack" --quiet
 
       - name: Publish
+        if: steps.version.outputs.publish == 'true'
         run: npm publish "$RUNNER_TEMP"/pack/*.tgz --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Tag and release
+        if: steps.version.outputs.publish == 'true'
+        run: gh release create "cli-v$VERSION" --target "$GITHUB_SHA" --title "@beastjs/cli $VERSION" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
