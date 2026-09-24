@@ -1,0 +1,130 @@
+import { useState } from 'octane'
+import Button from '@beast-ui/registry/ui/button'
+import ScrubField from '@beast-ui/registry/ui/scrubfield'
+import CallChip from '@beast-ui/registry/ui/call-chip'
+import Squishy from '@beast-ui/registry/ui/squishy'
+import registry from '../../../registry.json'
+
+module
+  const callUsage = [
+    "import CallChip from '@/components/ui/call-chip'",
+    '',
+    "CallChip(name='Search' argument='components' icon='search' status={status} onRetry={retry})",
+  ].join('\n')
+  const variants = ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link'] as const
+  const installCommands = [
+    'bun run cli init --cwd ../my-app --registry http://127.0.0.1:5173/r',
+    'bun run cli add button --cwd ../my-app --dry-run',
+    'bun run cli add button --cwd ../my-app',
+  ].join('\n')
+
+setup
+  const [count, setCount] = useState(0);
+  const [dark, setDark] = useState(false);
+  const [opacity, setOpacity] = useState(50);
+  const [callStatus, setCallStatus] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [notifications, setNotifications] = useState(false);
+
+main(className={dark ? 'dark min-h-screen bg-background text-foreground' : 'min-h-screen bg-background text-foreground'})
+  div(className='mx-auto max-w-5xl px-6 py-8 sm:px-10 sm:py-12')
+    header(className='flex items-center justify-between border-b border-border pb-6')
+      a(href='/' className='flex items-center gap-3 text-lg font-semibold tracking-tight')
+        img(src='/beast.svg' alt='' className='size-7')
+        span(className="brand-name font-okx font-bold skew-2") Beast UI
+      div(className='flex items-center gap-5')
+        a(href='/r/registry.json' className='text-sm text-muted-foreground underline-offset-4 hover:underline') Registry JSON
+        Button(variant='outline' size='sm' onClick={() => setDark(!dark)} aria-pressed={dark}) #{dark ? 'Light theme' : 'Dark theme'}
+    section(className='py-16 sm:py-20')
+      p(className='mb-5 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground') The Beast component registry
+      h1(className='max-w-2xl text-5xl font-medium leading-[1.06] tracking-[-0.045em] sm:text-6xl') Your components. Your source.
+      p(className='mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground') Accessible UI for Beast and Octane. Add the source to your project, make it your own, and build from there.
+      div(className='mt-8 flex flex-wrap gap-3')
+        a(href='#get-started' className='rounded-lg bg-primary px-5 py-3 text-sm font-medium text-primary-foreground') Get started
+        a(href='https://beast-docs.vercel.app/' className='rounded-lg border border-border px-5 py-3 text-sm font-medium') Beast documentation ↗
+    section#button(className='border-t border-border py-10' aria-labelledby='button-title')
+      div(className='flex flex-wrap items-end justify-between gap-4')
+        div
+          p(className='font-mono text-xs text-muted-foreground') 01 / COMPONENTS
+          h2#button-title(className='mt-3 text-2xl font-medium tracking-tight') Button
+        a(href='/r/button.json' className='text-sm text-muted-foreground underline underline-offset-4') View source JSON ↗
+      p(className='mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground') Built on Octane Base UI, with six variants, eight sizes, and keyboard focus states. These previews use the registry source directly.
+      div(className='mt-6 flex min-h-48 flex-wrap items-center justify-center gap-4 rounded-xl border border-border bg-muted/30 p-8')
+        each variant in variants key variant
+          Button(variant={variant} onClick={() => setCount(count + 1)}) #{variant}
+      div(className='mt-4 flex flex-wrap items-center justify-between gap-4')
+        p(role='status' className='text-sm text-muted-foreground') #{count === 0 ? 'Try a button to check the interaction.' : `Button clicked ${count} ${count === 1 ? 'time' : 'times'}.`}
+        Button(disabled={true} variant='outline') Disabled
+    section#scrubfield(className='border-t border-border py-10' aria-labelledby='scrubfield-title')
+      div(className='flex items-end justify-between gap-4')
+        h2#scrubfield-title(className='text-2xl font-medium tracking-tight') Scrub Field
+        a(href='/r/scrubfield.json' className='text-sm text-muted-foreground underline underline-offset-4') View source JSON ↗
+      p(className='mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground') Drag to adjust, or click the value to type. Use arrow keys for small changes, Shift for larger steps, and Alt for fine adjustments.
+      div(className='mt-6 flex min-h-40 flex-wrap items-center justify-center gap-6 rounded-xl border border-border bg-muted/30 p-8')
+        ScrubField(label='Opacity' suffix='%' value={opacity} onChange={setOpacity} chipColor='var(--muted)' accent='var(--border)')
+        ScrubField(label='Disabled' defaultValue={25} disabled={true} chipColor='var(--border)')
+        ScrubField(
+          ~ label="Radius"
+          ~ suffix="px"
+          ~ defaultValue={25}
+          ~ step={1}
+          ~ size="lg"
+          ~ sensitivity={2}
+          ~ rubberReach={6}
+          ~ returnDuration={300}
+          ~ coarseMultiplier={10}
+          ~ fineMultiplier={0.1}
+          ~ showDelta
+          ~ showDirty={false}
+          ~ showFill
+          ~ accent="var(--muted-foreground)"
+          ~ chipColor="var(--muted)"
+          ~ onChange={setOpacity}
+          ~ onCommit={setOpacity}
+          ~ disabled={false}
+          ~ )
+      p(role='status' className='mt-4 text-sm text-muted-foreground') #{`Opacity: ${opacity}%`}
+    section#squishy(className='border-t border-border py-10' aria-labelledby='squishy-title')
+      div(className='flex items-end justify-between gap-4')
+        h2#squishy-title(className='text-2xl font-medium tracking-tight') Squishy Switch
+        a(href='/r/squishy.json' className='text-sm text-muted-foreground underline underline-offset-4') View source JSON ↗
+      p(className='mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground') Click, drag the thumb, or use Space to toggle. The thumb stretches as it moves and settles into place.
+      div(className='mt-6 flex min-h-40 flex-wrap items-center justify-center gap-6 rounded-xl border border-border bg-muted/30 p-8')
+        Squishy(label='Notifications' checked={notifications} onChange={setNotifications})
+      p(role='status' className='mt-4 text-sm text-muted-foreground') #{notifications ? 'Notifications enabled.' : 'Notifications disabled.'}
+    section#call-chip(className='border-t border-border py-10' aria-labelledby='call-chip-title')
+      div(className='flex items-end justify-between gap-4')
+        h2#call-chip-title(className='text-2xl font-medium tracking-tight') Call Chip
+        a(href='/r/call-chip.json' className='text-sm text-muted-foreground underline underline-offset-4') View source JSON ↗
+      p(className='mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground') Show a tool call from queued to running, done, or failed. Start the example, then complete or fail it. Click a failed chip or focus it and press Enter or Space to retry.
+      div(className='mt-6 flex min-h-40 flex-col items-center justify-center gap-6 rounded-xl border border-border bg-muted/30 p-8')
+        CallChip(name='Search' argument='components' icon='search' status={callStatus} onRetry={() => setCallStatus('running')})
+        div(className='flex flex-wrap justify-center gap-3')
+          Button(size='sm' onClick={() => setCallStatus('running')} disabled={callStatus === 'running'}) Start
+          Button(size='sm' variant='outline' onClick={() => setCallStatus('done')} disabled={callStatus !== 'running'}) Complete
+          Button(size='sm' variant='outline' onClick={() => setCallStatus('error')} disabled={callStatus !== 'running'}) Fail
+          Button(size='sm' variant='ghost' onClick={() => setCallStatus('idle')}) Reset
+      pre(className='mt-6 overflow-x-auto rounded-xl border border-border bg-muted/50 p-5 text-xs leading-7 sm:text-sm')
+        code bun run cli add call-chip --cwd ../my-app
+      pre(className='mt-4 overflow-x-auto rounded-xl border border-border bg-muted/50 p-5 text-xs leading-7 sm:text-sm')
+        code #{callUsage}
+      p(className='mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground') #{'Control status with idle (default), running, done, or error. onRetry requests a new run; your app updates status. expectedMs (2000) estimates progress, which holds at 90% until completion. The timer measures elapsed time, not actual task progress.'}
+      p(className='mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground') #{'Use terminal (default), file, search, edit, or a custom Octane node for icon. showTimer defaults to true. Customize size (32), radius (8), shake (3), color, surfaceColor, progressColor, progressOpacity (0.08), doneColor, errorColor, washOpacity (0.12), className, and style. Reduced motion disables the progress sweep and error shake.'}
+    section#get-started(className='border-t border-border py-10' aria-labelledby='start-title')
+      p(className='font-mono text-xs text-muted-foreground') 02 / GET STARTED
+      h2#start-title(className='mt-3 text-2xl font-medium tracking-tight') From registry to your project
+      p(className='mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground') Start with a Beast + Octane app using Tailwind CSS v4. While this registry runs locally, use the CLI from this repository:
+      pre(className='mt-6 overflow-x-auto rounded-xl border border-border bg-muted/50 p-5 text-xs leading-7 sm:text-sm')
+        code #{installCommands}
+      p(className='mt-4 text-sm leading-relaxed text-muted-foreground') #{'Import src/styles/theme.css after Tailwind in your app stylesheet. Configure @/* to resolve to src/* in both TypeScript and Vite. The installer adds the button, class utility, theme, and npm dependencies.'}
+    section(className='border-t border-border py-10' aria-labelledby='catalog-title')
+      p(className='font-mono text-xs text-muted-foreground') 03 / REGISTRY CONTENTS
+      h2#catalog-title(className='mt-3 text-2xl font-medium tracking-tight') Small pieces, ready to build on
+      div(className='mt-6 grid gap-4 sm:grid-cols-3')
+        each item in registry.items key item.name
+          a(href={`/r/${item.name}.json`} className='rounded-xl border border-border p-5 transition-colors hover:bg-muted')
+            span(className='font-mono text-xs text-muted-foreground') #{item.type}
+            h3(className='mt-3 font-medium') #{item.title}
+            p(className='mt-2 text-sm leading-relaxed text-muted-foreground') #{item.description}
+    footer(className='flex flex-wrap justify-between gap-3 border-t border-border pt-6 text-xs text-muted-foreground')
+      p Beast + Octane · Tailwind CSS v4
+      p Source components, installed locally.

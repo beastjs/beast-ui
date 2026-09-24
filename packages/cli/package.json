@@ -1,0 +1,14 @@
+{
+  "name": "@beast-ui/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": { "beast-ui": "./dist/index.js" },
+  "files": ["dist"],
+  "engines": { "node": ">=22.22.2" },
+  "scripts": { "build": "bun build src/index.ts --target node --outdir dist" },
+  "dependencies": {
+    "@beast-ui/registry": "workspace:*",
+    "commander": "^15.0.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "types": ["vite/client", "node"],
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] },
+    "plugins": [{ "name": "@tsrx/typescript-plugin" }]
+  },
+  "include": ["src", "vite.config.ts", "../../packages/registry/ui"],
+  "tsrx": { "compiler": "octane" }
+}

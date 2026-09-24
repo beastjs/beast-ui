@@ -1,0 +1,14 @@
+import { FIGURE_CLASSES, PRE_CLASSES } from "../lib/code/classes";
+import type { OctaneNode } from "octane";
+import CopyButton from "./copy-button.btsx";
+
+component CodeLine
+  props { children }: { children: OctaneNode }
+  span(data-line="") #{children}
+module
+  export { CodeLine }
+props { children, text, }: { children: OctaneNode; text: string }
+figure(className={FIGURE_CLASSES})
+  CopyButton(className="absolute top-2 right-2" text={text})
+  pre(className={PRE_CLASSES})
+    code.grid(data-theme="light dark") #{children}

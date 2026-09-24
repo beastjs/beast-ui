@@ -1,0 +1,23 @@
+{
+  "name": "@beast-ui/docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsrx-tsc --noEmit"
+  },
+  "dependencies": {
+    "@beast-ui/registry": "workspace:*",
+    "@hugeicons/core-free-icons": "^4.3.4",
+    "beast-tsrx": "0.2.62",
+    "octane": "0.2.13",
+    "shiki": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.0.16"
+  }
+}

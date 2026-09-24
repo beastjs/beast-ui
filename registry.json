@@ -1,0 +1,100 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "beast-ui",
+  "homepage": "http://localhost:5173",
+  "items": [
+    {
+      "name": "utils",
+      "type": "registry:lib",
+      "title": "Class utilities",
+      "description": "Merge conditional classes and Tailwind utilities.",
+      "dependencies": [
+        "clsx@^2.1.1",
+        "tailwind-merge@^3.7.0"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/lib/utils.ts",
+          "type": "registry:lib"
+        }
+      ]
+    },
+    {
+      "name": "theme",
+      "type": "registry:style",
+      "title": "Theme",
+      "description": "Tailwind v4 tokens with light and dark colors.",
+      "files": [
+        {
+          "path": "packages/registry/styles/theme.css",
+          "type": "registry:style"
+        }
+      ]
+    },
+    {
+      "name": "button",
+      "type": "registry:ui",
+      "title": "Button",
+      "description": "An accessible Beast button with six variants and eight sizes.",
+      "dependencies": [
+        "@octanejs/base-ui@0.1.53",
+        "class-variance-authority@^0.7.1"
+      ],
+      "registryDependencies": [
+        "utils",
+        "theme"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/button.btsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "scrubfield",
+      "type": "registry:ui",
+      "title": "Scrub Field",
+      "description": "A numeric field with drag scrubbing, keyboard controls, and animated bounds.",
+      "dependencies": [
+        "@octanejs/motion@^0.1.53"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/scrubfield.btsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "squishy",
+      "type": "registry:ui",
+      "title": "Squishy Switch",
+      "description": "An animated switch with a draggable, elastic thumb.",
+      "dependencies": [
+        "@octanejs/motion@^0.1.53"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/squishy.btsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "call-chip",
+      "type": "registry:ui",
+      "title": "Call Chip",
+      "description": "A compact tool-call status with progress, elapsed time, and retry controls.",
+      "dependencies": [
+        "@hugeicons/core-free-icons@^4.3.4"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/call-chip.btsx",
+          "type": "registry:ui"
+        }
+      ]
+    }
+  ]
+}

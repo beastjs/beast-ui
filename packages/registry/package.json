@@ -1,0 +1,28 @@
+{
+  "name": "@beast-ui/registry",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./node": "./node.ts",
+    "./schema": "./schema.ts",
+    "./ui/*": "./ui/*.btsx",
+    "./lib/*": "./lib/*.ts",
+    "./styles/*": "./styles/*"
+  },
+  "scripts": {
+    "typecheck": "tsrx-tsc --noEmit"
+  },
+  "dependencies": {
+    "@hugeicons/core-free-icons": "^4.3.4",
+    "@octanejs/base-ui": "0.1.53",
+    "@octanejs/motion": "^0.1.53",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.0.0"
+  },
+  "peerDependencies": {
+    "octane": "0.2.13"
+  }
+}

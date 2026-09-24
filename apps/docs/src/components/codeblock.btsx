@@ -1,0 +1,37 @@
+import { createHighlighter } from "shiki";
+import CodeFrame, { CodeLine } from "./code-frame.btsx";
+import { type CSSProperties, use, useState } from "octane";
+module
+  const highlighter = createHighlighter({
+    langs: ["tsx"],
+    themes: ['github-light', 'github-dark'],
+  });
+  export type ThemedStyle = CSSProperties & {
+    "--shiki-dark": string;
+    "--shiki-light": string;
+  };
+
+  export function themed(light: string, dark: string): ThemedStyle {
+    return { "--shiki-dark": dark, "--shiki-light": light };
+  }
+
+props { code }: { code: string }
+setup
+  const [btsx, setBtsx] = useState<{ __html: string }>({ __html: '' })
+  const { tokens } = use(highlighter).codeToTokens(code, {
+    defaultColor: false,
+    lang: "tsx",
+    themes: {light: 'github-light', dark: 'github-dark'},
+  });
+CodeFrame(text={code})
+  each line, index in tokens key `${index}:${line.map(({ content }) => content).join("")}`
+    CodeLine
+      if line.length === 0
+        | #{" "}
+      else
+        each item in line
+          scope
+            setup
+              const { content, htmlStyle, offset } = item;
+              const { "--shiki-dark": dark = "inherit", "--shiki-light": light = "inherit", } = htmlStyle ?? {};
+            span(key={offset} style={themed(light, dark)}) #{content}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.beast/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Generated registry payloads
+apps/docs/public/r/
+coverage/

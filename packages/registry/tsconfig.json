@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": { "@/*": ["./*"] },
+    "plugins": [{ "name": "@tsrx/typescript-plugin" }]
+  },
+  "include": ["ui", "lib", "schema.ts", "node.ts"],
+  "tsrx": { "compiler": "octane" }
+}
