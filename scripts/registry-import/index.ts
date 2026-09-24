@@ -1,51 +1,20 @@
-import { spawn } from 'node:child_process'
 import { execFile } from 'node:child_process'
 import { mkdir, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { createInterface, type Interface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { itemNameSchema } from '@beast-ui/registry/schema'
 import { paint, symbols } from '../../packages/cli/src/utils/ui.ts'
+import { ask, confirm, createPrompt, fail, iconNames, list, printHelp, runStep, say, wantsHelp } from '../lib/prompt.ts'
+import { previewSession } from '../preview-gen/session.ts'
 import { analyzeComponent, parseImports, toItemName, toTitle, type CatalogEntry, type ParsedImport } from './analyze.ts'
-import { applyComponent, hasPreview, missingPackages, paths, readRegistry, removeStaged, type ComponentPlan } from './apply.ts'
+import { applyComponent, hasPreview, missingPackages, paths, readRegistry, registeredIcon, removeStaged, type ComponentPlan } from './apply.ts'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
-const stagingDir = path.resolve(root, process.argv[2] ?? 'staging')
+const args = process.argv.slice(2)
+const stagingDir = path.resolve(root, args.find((arg) => !arg.startsWith('-')) ?? 'staging')
 const run = promisify(execFile)
 const DEPENDENCY = /^(?:@[a-z0-9._-]+\/)?[a-z0-9][a-z0-9._-]*(?:@[~^<>=0-9a-zA-Z.*|+ -]+)?$/
-
-const say = (text = '') => { process.stdout.write(`${text}\n`) }
-const fail = (text: string) => say(`    ${paint('red', symbols.fail)} ${text}`)
-const list = (answer: string): string[] => (answer === '-' ? [] : answer.split(/[\s,]+/).filter(Boolean))
-
-interface AskOptions {
-  initial?: string
-  required?: boolean
-  hint?: string
-  validate?: (answer: string) => string | undefined
-}
-
-async function ask(prompt: Interface, label: string, options: AskOptions = {}): Promise<string> {
-  for (;;) {
-    const shown = options.initial ? paint('dim', ` (${options.initial})`) : ''
-    const hint = options.hint ? paint('dim', ` ${options.hint}`) : ''
-    const answer = (await prompt.question(`  ${paint('cyan', '?')} ${label}${shown}${hint} `)).trim() || options.initial || ''
-    if (!answer && options.required) { fail('Required.'); continue }
-    const error = options.validate?.(answer)
-    if (error) { fail(error); continue }
-    return answer
-  }
-}
-
-async function confirm(prompt: Interface, label: string, initial: boolean): Promise<boolean> {
-  for (;;) {
-    const answer = (await prompt.question(`  ${paint('cyan', '?')} ${label} ${paint('dim', initial ? '(Y/n)' : '(y/N)')} `)).trim().toLowerCase()
-    if (answer === '') return initial
-    if (/^(y|yes|n|no)$/.test(answer)) return answer.startsWith('y')
-    fail('Answer y or n.')
-  }
-}
 
 /** Version ranges already used in the workspace, so new components match them. */
 async function workspaceRanges(): Promise<Map<string, string>> {
@@ -102,30 +71,34 @@ function orderStaged(files: { name: string; source: string }[], catalog: Map<str
   return ordered
 }
 
-async function iconNames(): Promise<string[]> {
-  const source = await readFile(path.join(root, 'apps/web/src/lib/icons/icons.ts'), 'utf8')
-  return [...source.matchAll(/^ {2}'?([a-z][a-z0-9-]*)'?: ?\{/gm)].map((match) => match[1])
-}
-
-async function runStep(label: string, command: string, args: string[]): Promise<boolean> {
-  process.stdout.write(`  ${paint('dim', '…')} ${label}`)
-  return new Promise((resolve) => {
-    const child = spawn(command, args, { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] })
-    const output: string[] = []
-    child.stdout.on('data', (chunk: Buffer) => output.push(chunk.toString()))
-    child.stderr.on('data', (chunk: Buffer) => output.push(chunk.toString()))
-    child.once('close', (code) => {
-      process.stdout.write(`\r\x1b[2K`)
-      if (code === 0) { say(`  ${paint('green', symbols.ok)} ${label}`); resolve(true); return }
-      say(`  ${paint('red', symbols.fail)} ${label}`)
-      say(paint('dim', output.join('').trim().split('\n').slice(-15).map((line) => `    ${line}`).join('\n')))
-      resolve(false)
-    })
-  })
-}
+const HELP = [
+  `${paint('bold', 'bun run registry:import')} ${paint('dim', '[dir]')}`,
+  '',
+  'Adds the .btsx components in a staging directory (default: staging/) to the',
+  'registry, one at a time, asking for the details registry.json needs.',
+  '',
+  paint('dim', 'For each file it asks'),
+  '  Name, Title, Description     catalog entry; name defaults to the file name',
+  '  Variant of                   base component, or - for none',
+  '  Registry dependencies        items it imports, e.g. button, utils, theme',
+  '  npm dependencies             packages with ranges, e.g. clsx@^2.1.1',
+  '  Showcase icon                sidebar icon in apps/web',
+  '  Write it?                    y to write, s to skip the file, q to stop',
+  '',
+  paint('dim', 'Answers'),
+  '  Enter accepts the value in parentheses. Lists are comma- or space-separated;',
+  '  - means none. Ctrl+C stops; components already written are kept.',
+  '',
+  paint('dim', 'Afterwards'),
+  '  Installs new packages, rebuilds and validates the registry, then offers to',
+  '  write previews with showcase:preview. Written files leave staging/.',
+  '',
+  `Guide: ${paint('cyan', 'docs/adding-components.md')}`,
+]
 
 async function main(): Promise<void> {
-  if (!process.stdin.isTTY) throw new Error('registry:import is interactive. Run it in a terminal.')
+  if (wantsHelp(args)) { printHelp(HELP); return }
+  if (!process.stdin.isTTY) throw new Error('registry:import is interactive. Run it in a terminal, or pass --help.')
   await mkdir(stagingDir, { recursive: true })
   const relativeStaging = path.relative(root, stagingDir) || '.'
   const entries = (await readdir(stagingDir)).filter((file) => !file.startsWith('.')).sort()
@@ -146,8 +119,8 @@ async function main(): Promise<void> {
   const staged = await Promise.all(components.map(async (file) => ({ file, name: toItemName(file), source: await readFile(path.join(stagingDir, file), 'utf8') })))
   const queue = orderStaged(staged, initialCatalog).map((entry) => staged.find((file) => file.name === entry.name)!)
   const ranges = await workspaceRanges()
-  const icons = await iconNames()
-  const prompt = createInterface({ input: process.stdin, output: process.stdout })
+  const icons = await iconNames(root)
+  const prompt = createPrompt()
   const written: string[] = []
   let packagesChanged = false
 
@@ -214,7 +187,7 @@ async function main(): Promise<void> {
         },
       }))
 
-      const baseIcon = variantOf ? (await readFile(path.join(root, paths.previews), 'utf8')).match(new RegExp(`^  '?${variantOf}'?: \\{ icon: '([a-z0-9-]+)'`, 'm'))?.[1] : undefined
+      const baseIcon = variantOf ? registeredIcon(await readFile(path.join(root, paths.previews), 'utf8'), variantOf) : undefined
       const icon = await ask(prompt, 'Showcase icon', {
         initial: baseIcon ?? 'folder',
         hint: icons.join(', '),
@@ -230,7 +203,7 @@ async function main(): Promise<void> {
       const additions = await missingPackages(root, plan)
       if (additions.length) say(`    ${paint('yellow', symbols.replace)} ${paths.registryPackage} ${paint('dim', `(adds ${additions.map(([pkg]) => pkg).join(', ')})`)}`)
       if (await hasPreview(root, name)) say(`    ${paint('dim', `${symbols.keep} ${paths.preview(name)} (exists; kept)`)}`)
-      else say(`    ${paint('green', symbols.create)} ${paths.preview(name)} ${paint('dim', '(starter preview; fill it in)')}`)
+      else say(`    ${paint('green', symbols.create)} ${paths.preview(name)} ${paint('dim', '(starter preview)')}`)
       say(`    ${paint('yellow', symbols.replace)} ${paths.previews}`)
       say()
 
@@ -248,22 +221,31 @@ async function main(): Promise<void> {
       say(`  ${paint('green', symbols.ok)} Added ${name} ${paint('dim', `· ${changed.length} files changed · removed from ${relativeStaging}/`)}`)
       say()
     }
+
+    let previewed: string[] = []
+    if (written.length) {
+      if (packagesChanged) await runStep(root, 'Installed new npm dependencies', 'bun', ['install'])
+      const built = await runStep(root, 'Rebuilt and validated the registry', 'bun', ['scripts/build-registry.ts'])
+      say()
+      say(`  ${paint(built ? 'green' : 'yellow', symbols.brand)} ${paint('bold', `Imported ${written.join(', ')}.`)}`)
+      say()
+      if (built && await confirm(prompt, `Write ${written.length === 1 ? 'its preview' : 'their previews'} now?`, true)) {
+        say()
+        previewed = (await previewSession(root, prompt, written)).written
+      }
+      const starters = written.filter((name) => !previewed.includes(name))
+      say(`    ${paint('dim', starters.length
+        ? `Next: bun run showcase:preview ${starters.join(' ')} to replace the starter previews, then bun run check.`
+        : 'Next: check the previews with bun run dev, then run bun run check.')}`)
+    }
+    const left = (await readdir(stagingDir)).filter((file) => file.endsWith('.btsx'))
+    say(left.length
+      ? `    ${paint('dim', `${left.length} left in ${relativeStaging}/: ${left.join(', ')}`)}`
+      : `    ${paint('dim', `No components left in ${relativeStaging}/.`)}`)
+    say()
   } finally {
     prompt.close()
   }
-
-  if (written.length) {
-    if (packagesChanged) await runStep('Installed new npm dependencies', 'bun', ['install'])
-    const built = await runStep('Rebuilt and validated the registry', 'bun', ['scripts/build-registry.ts'])
-    say()
-    say(`  ${paint(built ? 'green' : 'yellow', symbols.brand)} ${paint('bold', `Imported ${written.join(', ')}.`)}`)
-    say(`    ${paint('dim', 'Next: fill in each starter preview in apps/web/src/previews, check it with bun run dev, then run bun run check.')}`)
-  }
-  const left = (await readdir(stagingDir)).filter((file) => file.endsWith('.btsx'))
-  say(left.length
-    ? `    ${paint('dim', `${left.length} left in ${relativeStaging}/: ${left.join(', ')}`)}`
-    : `    ${paint('dim', `No components left in ${relativeStaging}/.`)}`)
-  say()
 }
 
 try {
