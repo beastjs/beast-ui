@@ -1,0 +1,36 @@
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "cn";
+import type { ComponentProps } from "octane";
+module
+  const alertVariants = cva("cn-alert group/alert relative w-full", {
+    variants: {
+      variant: {
+        default: "cn-alert-variant-default",
+        destructive: "cn-alert-variant-destructive",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  });
+  export { AlertTitle, AlertDescription, AlertAction };
+component AlertTitle
+  props { className, ...props }: ComponentProps<"div">
+  div(
+    ~ data-slot="alert-title"
+    ~ className={cn("cn-alert-title [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground", className)}
+    ~ {...props}
+    ~ )
+component AlertDescription
+  props { className, ...props }: ComponentProps<"div">
+  div(
+    ~ data-slot="alert-description"
+    ~ className={cn("cn-alert-description [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground", className)}
+    ~ {...props}
+    ~ )
+component AlertAction
+  props { className, ...props }: ComponentProps<"div">
+  div(data-slot="alert-action" className={cn("cn-alert-action", className)} {...props})
+
+props { className, variant, ...props }: ComponentProps<"div"> & VariantProps<typeof alertVariants>
+div(data-slot="alert" role="alert" className={cn(alertVariants({ variant }), className)} {...props})

@@ -1,6 +1,7 @@
 import { Link } from "@octanejs/tanstack-router";
-import { CLI, componentTree, REGISTRY_URL } from "@/lib/catalog";
-import { componentHref } from "@/lib/navs";
+import { CLI, componentTree, REGISTRY_URL } from "../lib/catalog";
+import { componentHref } from "../lib/navs";
+
 
 module
   const setupCommands = [

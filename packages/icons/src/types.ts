@@ -1,5 +1,5 @@
 import type { ClassValue } from 'octane'
-import type { IconName } from './icons.ts'
+import type { IconName } from './icons'
 
 export interface IconProps {
   name: IconName

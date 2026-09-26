@@ -24,10 +24,12 @@ setup
 fragment
   div(className='hidden md:block sticky top-0 z-40')
     Topbar(toggleSidebar={toggleCompact} isCompact={isCompact})
-  Group(orientation="horizontal" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged} className="h-screen -[calc(100dvh-var(--topbar-height))] overflow-hidden")
-    Panel(id="sidebar" panelRef={sidebarRef} defaultSize="200px" minSize="200px" maxSize="300px" collapsible collapsedSize="64px" onResize={syncCompact})
-      Sidebar(path={path} isCompact={isCompact})
-    Separator(aria-label="Resize sidebar" className={SEPARATOR_CLASS})
-    Panel(id="content" minSize="30%")
-      Container
-        Outlet
+  // Group sets an inline height: 100%, so the height below the topbar lives on this wrapper.
+  div(className="h-[calc(100dvh-var(--topbar-height))] overflow-hidden")
+    Group(orientation="horizontal" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged})
+      Panel(id="sidebar" panelRef={sidebarRef} defaultSize="200px" minSize="200px" maxSize="300px" collapsible collapsedSize="64px" onResize={syncCompact})
+        Sidebar(path={path} isCompact={isCompact})
+      Separator(aria-label="Resize sidebar" className={SEPARATOR_CLASS})
+      Panel(id="content" minSize="30%")
+        Container
+          Outlet

@@ -15,11 +15,13 @@
     "typecheck": "tsrx-tsc --noEmit"
   },
   "dependencies": {
+    "@beast-ui/icons": "^0.1.0",
     "@hugeicons/core-free-icons": "^4.3.5",
     "@octanejs/base-ui": "0.1.55",
     "@octanejs/motion": "^0.1.54",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cn": "^0.4.0",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.0.0"
   },

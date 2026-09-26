@@ -1,5 +1,5 @@
-import { ICON_VIEWBOX, icons } from './icons.ts'
-import type { IconProps } from './types.ts'
+import { ICON_VIEWBOX, icons } from './icons'
+import type { IconProps } from './types'
 
 props { name, size = 20, className, color, label }: IconProps
 
@@ -9,6 +9,8 @@ svg(
   ~ width={size}
   ~ height={size}
   ~ fill="currentColor"
+  ~ strokeLinecap="round"
+  ~ strokeLinejoin="round"
   ~ className={className}
   ~ style={{ flexShrink: 0, color }}
   ~ role={label ? 'img' : undefined}

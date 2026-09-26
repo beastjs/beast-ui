@@ -1,9 +1,9 @@
-import { cn } from "@/lib/utils"
+import { cn } from "../lib/utils"
 import { Icon } from '@beast-ui/icons';
 import Button from "./ui/Button.btsx";
 import { ThemeToggle } from "./ThemeProvider.btsx";
 import { Link } from "@octanejs/tanstack-router";
-import { REPOSITORY_URL } from "@/lib/catalog";
+import { REPOSITORY_URL } from "../lib/catalog";
 
 module
   interface TopbarProps {
@@ -30,12 +30,11 @@ component Brand
 
 
 props { toggleSidebar, isCompact = false }: TopbarProps
-header(className="sticky top-0 z-40 bg-surface/20 backdrop-blur-3xl w-full")
-  div(className="topbar w-full px-3.5 flex items-center justify-between gap-4")
-    Brand
-      div(className="hidden md:flex items-center")
-        button(className="size-6 aspect-square place-items-center text-input hover:text-foreground/80 hover:border-input transition" onClick={toggleSidebar} aria-label={isCompact ? "Expand sidebar" : "Compact sidebar"} aria-pressed={isCompact} title={isCompact ? "Expand sidebar" : "Compact sidebar"})
-          Icon(name='sidebar' className="size-5 m-0.75")
-    div(className="flex items-center gap-2")
-      ThemeToggle
-      Button(label="GitHub" variant='default' size="sm" type='a' href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" className="hidden md:flex")
+header(className="topbar sticky top-0 z-40 bg-surface/20 backdrop-blur-3xl w-full w-full px-3.5 flex items-center justify-between gap-4")
+  Brand
+    div(className="hidden md:flex items-center")
+      button(className="size-6 aspect-square place-items-center text-input hover:text-foreground/80 hover:border-input transition" onClick={toggleSidebar} aria-label={isCompact ? "Expand sidebar" : "Compact sidebar"} aria-pressed={isCompact} title={isCompact ? "Expand sidebar" : "Compact sidebar"})
+        Icon(name='sidebar' className="size-5 m-0.75")
+  div(className="flex items-center gap-2")
+    ThemeToggle
+    Button(label="GitHub" variant='default' size="sm" type='a' href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" className="hidden md:flex")

@@ -16,4 +16,10 @@ export const previews: Record<string, Preview> = {
   scrubfield: { icon: 'timeline', component: lazy(() => import('./scrubfield-preview.btsx')) },
   squishy: { icon: 'spinner-ring', component: lazy(() => import('./squishy-preview.btsx')) },
   'call-chip': { icon: 'search', component: lazy(() => import('./call-chip-preview.btsx')) },
+  alert: { icon: 'beast', component: lazy(() => import('./alert-preview.btsx')) },
+  'aspect-ratio': { icon: 'mechanics', component: lazy(() => import('./aspect-ratio-preview.btsx')) },
+  bubble: { icon: 'folder', component: lazy(() => import('./bubble-preview.btsx')) },
+  checkbox: { icon: 'beast', component: lazy(() => import('./checkbox-preview.btsx')) },
+  drawer: { icon: 'sidebar', component: lazy(() => import('./drawer-preview.btsx')) },
+  popover: { icon: 'chevron-down', component: lazy(() => import('./popover-preview.btsx')) },
 }

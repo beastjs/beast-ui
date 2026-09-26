@@ -3,6 +3,8 @@
 The icons the web and docs apps draw. Each icon is one file in `svg/`.
 `bun run icons:build` turns them into `src/icons.ts`, which `Icon` reads.
 
+To use the same setup in another app, see [docs/icons.md](../../docs/icons.md).
+
 ## Drawing an icon
 
 ```
@@ -24,31 +26,11 @@ clickable, put it inside a `button` and give the button an `aria-label`.
 
 ## Adding an icon
 
-1. Save it as `svg/<name>.svg`. Names are lowercase words joined by hyphens.
+1. Save it as `svg/<name>.svg`, or `svg/color/<name>.svg` if it must keep its
+   own colors. Names are lowercase words joined by dashes.
 2. Run `bun run icons:build` from the repository root.
 3. Commit the `.svg` and `src/icons.ts`.
 
 `bun test` fails when `src/icons.ts` does not match the files in `svg/`.
-
-The build runs each file through [SVGO](https://svgo.dev) and:
-
-- redraws it on a 24×24 grid, so an icon from any set with a square `viewBox`
-  works as exported, and stroke widths compare across icons;
-- keeps `fill`, `stroke` and similar attributes set on the root `<svg>`, as
-  icon sets such as Lucide do;
-- turns every color into `currentColor`, so icons are one color and follow the
-  text. A lighter part can use `opacity`.
-- drops editor leftovers such as `font-size` on shapes and
-  `transform-origin="0 0"`;
-- prefixes ids with the icon name, so two icons on a page cannot clash.
-
-A comment in the file, such as `<!-- MingCute -->`, records where an icon came
-from. Comments are not shipped.
-
-It refuses:
-
-| Message | Fix |
-| --- | --- |
-| `… is not a valid icon name` | Rename the file: lowercase letters, digits and dashes. |
-| `… Icons must be square.` | Export the icon with a square `viewBox`. |
-| `… uses transform-origin=…` | Bake the transform into the path in your editor, or re-export it. |
+[docs/icons.md](../../docs/icons.md#what-build-iconsts-does) explains what the
+build does to each file, and what its messages mean.

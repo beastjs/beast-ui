@@ -1,7 +1,7 @@
 import { useEffect, useState } from "octane";
 import { Outlet, useLocation } from "@octanejs/tanstack-router";
-import MobileSidebar from "@/components/MobileSidebar.btsx";
-import { SidebarNav } from "@/components/Sidebar.btsx";
+import MobileSidebar from "../components/MobileSidebar.btsx";
+import { SidebarNav } from "../components/Sidebar.btsx";
 
 props {}:{}
 setup
@@ -12,6 +12,6 @@ setup
 fragment
   MobileSidebar(open={mobileNavOpen} onOpenChange={setMobileNavOpen})
     SidebarNav(path={path})
-  main(className='border overflow-hidden')
-    div(className='h-screen overflow-hidden border')
-      Outlet
+  // Only the content scrolls, so the 3rem header from MobileSidebar stays put.
+  main(className='h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain')
+    Outlet

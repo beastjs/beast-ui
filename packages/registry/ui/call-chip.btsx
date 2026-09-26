@@ -1,4 +1,4 @@
-import { CommandLineIcon, File02Icon, PencilEdit01Icon, RefreshIcon, Search01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { CommandLineIcon, File02Icon, PencilEdit01Icon, Search01Icon, AlertCircle, Tick02Icon } from "@hugeicons/core-free-icons";
 import { createElement, useEffect, useLayoutEffect, useRef, useState } from "octane";
 import type { OctaneNode, CSSProperties } from "octane";
 module
@@ -29,7 +29,7 @@ module
   const renderIcon = (data: typeof CommandLineIcon, size: number, strokeWidth: number) => createElement("svg", {
     width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth, "aria-hidden": true,
   }, ...data.map(([tag, attrs]) => createElement(tag, { ...attrs, strokeWidth })));
-  const HOLD_AT = 0.9;
+  const HOLD_AT = 0.92;
   const SHAKE = [0, -1, 1, -0.66, 0.66, -0.33, 0];
   const ICONS: Record<CallChipIcon, typeof CommandLineIcon> = {
     terminal: CommandLineIcon,
@@ -42,7 +42,7 @@ module
   const reduceMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
   const glyphOf = (s: CallChipStatus): Glyph => (s === "done" ? "check" : s === "error" ? "retry" : "tool");
 
-props { icon = "terminal", name = "Tool", argument = "", status = "idle", expectedMs = 2000, size = 32, radius = 8, color = "var(--foreground, #202020)", surfaceColor = "var(--muted, #f1f1f1)", progressColor = "currentColor", progressOpacity = 0.08, doneColor = "#15803d", errorColor = "#dc2626", washOpacity = 0.12, shake = 3, showTimer = true, onRetry, className, style }: CallChipProps
+props { icon = "terminal", name = "Tool", argument = "", status = "idle", expectedMs = 5000, size = 32, radius = 8, color = "var(--foreground, #202020)", surfaceColor = "var(--muted, #f1f1f1)", progressColor = "currentColor", progressOpacity = 0.08, doneColor = "#15803d", errorColor = "#dc2626", washOpacity = 0.12, shake = 3, showTimer = true, onRetry, className, style }: CallChipProps
 setup
   const rootRef = useRef<HTMLSpanElement | null>(null);
   const fillRef = useRef<HTMLSpanElement | null>(null);
@@ -216,12 +216,12 @@ span(
       ~ className="absolute inset-0 grid place-items-center opacity-0 blur-[3px] [transform:translateY(70%)] data-[state=in]:opacity-100 data-[state=in]:blur-none data-[state=in]:[transform:none] data-[state=in]:[transition:opacity_240ms_cubic-bezier(0.23,1,0.32,1),transform_240ms_cubic-bezier(0.23,1,0.32,1),filter_240ms_cubic-bezier(0.23,1,0.32,1)] data-[state=out]:[transform:translateY(-70%)] data-[state=out]:[transition:opacity_160ms_cubic-bezier(0.23,1,0.32,1),transform_160ms_cubic-bezier(0.23,1,0.32,1),filter_160ms_cubic-bezier(0.23,1,0.32,1)] group-data-[status=done]:data-[state=in]:[color:var(--cc-done)] group-data-[status=error]:data-[state=in]:[color:var(--cc-error)] motion-reduce:[transform:none]! motion-reduce:[filter:none]! group-not-data-[mounted]:transition-none!"
       ~ data-state={glyphState("retry")}
       ~ )
-      | #{renderIcon(RefreshIcon, iconSize, 2)}
+      | #{renderIcon(AlertCircle, iconSize, 2)}
   span(className="relative font-medium" aria-hidden="true") #{name}
   span(className="relative opacity-[0.72]" aria-hidden="true") #{argument}
   if showTimer
     span(
-      ~ className="relative min-w-[6ch] text-right tabular-nums opacity-50"
+      ~ className="relative min-w-[8ch] text-right tabular-nums opacity-50"
       ~ ref={timerRef}
       ~ aria-hidden="true"
       ~ )

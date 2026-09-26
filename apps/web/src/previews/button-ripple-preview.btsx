@@ -11,4 +11,4 @@ div(className="flex flex-col items-center gap-6")
   div(className="flex flex-wrap items-center justify-center gap-4")
     ButtonRipple(variant="outline" size="lg" rippleColor="var(--primary)" rippleOpacity={0.35} rippleDuration={900}) Slow, tinted ripple
     ButtonRipple(variant="outline" size="lg" disabled={true}) Disabled
-  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Press anywhere on a button: the ripple starts where you press. It accepts every Button prop, plus rippleColor, rippleOpacity, and rippleDuration.
+  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Let it rip ... ple.

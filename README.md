@@ -25,6 +25,10 @@ bun run check    # typecheck + test + build
 | `scripts/registry-import/` | `bun run registry:import`: wires staged components into the registry and showcase. |
 | `scripts/preview-gen/` | `bun run showcase:preview`: generates and typechecks showcase previews. |
 | `docs/adding-components.md` | Usage guide for `registry:import` and `showcase:preview`. |
+| `packages/icons/` | `@beast-ui/icons`: the icons the web and docs apps draw, one `.svg` per icon, and the `Icon` component. |
+| `scripts/build-icons.ts` | `bun run icons:build`: turns a folder of `.svg` files into an `icons.ts` module. Other apps copy it. |
+| `scripts/migrate-icons.ts` | Moves an app's older `icons.ts` map to `.svg` files, once per app. |
+| `docs/icons.md` | How icons work, and how to set them up or move them over in any app. |
 | `tests/registry.test.ts` | End-to-end coverage of the build, the resolver, and the installer. |
 
 ## Adding a component to the registry

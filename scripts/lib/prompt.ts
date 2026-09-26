@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process'
-import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { createInterface, type Interface } from 'node:readline/promises'
 import { paint, symbols } from '../../packages/cli/src/utils/ui.ts'
+import { listIcons } from '../build-icons.ts'
 
 export const say = (text = '') => { process.stdout.write(`${text}\n`) }
 export const fail = (text: string) => say(`    ${paint('red', symbols.fail)} ${text}`)
@@ -65,8 +65,7 @@ export async function confirm(prompt: Interface, label: string, initial: boolean
 
 /** Icon names the showcase sidebar can draw: one per .svg in packages/icons/svg. */
 export async function iconNames(root: string): Promise<string[]> {
-  const files = await readdir(path.join(root, 'packages/icons/svg'))
-  return files.filter((file) => file.endsWith('.svg')).map((file) => file.slice(0, -4)).sort()
+  return (await listIcons(path.join(root, 'packages/icons/svg'))).map((icon) => icon.name)
 }
 
 /** Runs a command quietly, showing its output only when it fails. */

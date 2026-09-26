@@ -6,7 +6,6 @@ setup
   const [notifications, setNotifications] = useState(false)
 div(className="flex flex-col items-center gap-6")
   div(className="flex flex-wrap items-center justify-center gap-6")
-    Squishy(label="Notifications" checked={notifications} onChange={setNotifications})
-    Squishy(label="Disabled" checked={true} disabled={true})
-  p(role="status" className="text-sm text-muted-foreground") #{notifications ? "Notifications enabled." : "Notifications disabled."}
-  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Click, drag the thumb, or press Space to toggle. The thumb stretches as it moves and settles into place.
+    Squishy(label="Notifications" size="sm" checked={notifications} onChange={setNotifications})
+  p(role="status" className="text-sm text-muted-foreground select-none") #{notifications ? "Enabled" : "Disabled"}
+  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") It squishy.

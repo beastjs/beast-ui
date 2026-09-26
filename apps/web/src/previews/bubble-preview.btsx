@@ -1,0 +1,6 @@
+import Bubble from "@beast-ui/registry/ui/bubble";
+
+props {}:{}
+div(className="flex flex-col items-center gap-6")
+  Bubble
+  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Bubble

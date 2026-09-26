@@ -82,7 +82,7 @@
   --surface: oklch(0.998 0 0);
   --soft: oklch(0.2046 0 0 / 50%);
   --muted: oklch(0.9401 0 0);
-  --muted-foreground: oklch(0.54 0 0);
+  --muted-foreground: oklch(0.3703 0.0119 285.81);
   --border: oklch(0.65 0 0);
   --primary: oklch(0.2046 0 0);
   --positive: oklch(0.72 0.17 155.61);

@@ -1,7 +1,7 @@
 import { createElement, type OctaneNode } from 'octane'
 import { Link } from '@octanejs/tanstack-router'
 import { Icon } from '@beast-ui/icons'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
 import Drawer, { DrawerClose, DrawerTrigger } from './ui/Drawer.btsx'
 import { ThemeToggle } from './ThemeProvider.btsx'
 
@@ -21,7 +21,8 @@ component Wordmark
 component MobileSidebarTrigger
   props { title }: { title?: string }
   header(className='sticky inset-x-0 top-0 z-35 flex h-12 items-center justify-between border-b border-border/40 bg-surface/80 backdrop-blur-3xl px-3 md:hidden')
-    Link(to='/' aria-label='Beast UI home')
+    Icon(name='beast' className='size-5 opacity-90')
+    Link(to='/' aria-label='⨂ Beast UI')
       Wordmark(title={title})
     div(className='flex items-center gap-1')
       ThemeToggle
@@ -32,12 +33,13 @@ component MobileSidebarHeader
   props { title }: { title?: string }
   div(className='shrink-0')
     div(className='flex h-16 items-center justify-between gap-3 ps-6 pe-2')
+      Icon(name='beast' className='size-5 opacity-90')
       Link(to='/' aria-label='Beast UI home')
         Wordmark(title={title})
       DrawerClose(type='button' aria-label='Close navigation' className='grid size-9 touch-manipulation place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')
         Icon(name='close' className='size-4 opacity-90')
 
-props { children, open, onOpenChange, title = 'Beast UI', className }: MobileSidebarProps
+props { children, open, onOpenChange, title = 'UI', className }: MobileSidebarProps
 setup const trigger = createElement(MobileSidebarTrigger, { title })
 
 Drawer(

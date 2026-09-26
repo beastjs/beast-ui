@@ -1,0 +1,6 @@
+import Alert from "@beast-ui/registry/ui/alert";
+
+props {}:{}
+div(className="flex flex-col items-center gap-6")
+  Alert
+  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Alert dialog box

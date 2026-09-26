@@ -1,0 +1,6 @@
+import Drawer from "@beast-ui/registry/ui/drawer";
+
+props {}:{}
+div(className="flex flex-col items-center gap-6")
+  Drawer
+  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Drawer dialog

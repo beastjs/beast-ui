@@ -134,6 +134,106 @@
           "type": "registry:ui"
         }
       ]
+    },
+    {
+      "name": "alert",
+      "type": "registry:ui",
+      "title": "Alert",
+      "description": "Alert dialog box",
+      "dependencies": [
+        "class-variance-authority@^0.7.1",
+        "cn@^0.4.0"
+      ],
+      "registryDependencies": [
+        "theme"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/alert.btsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "aspect-ratio",
+      "type": "registry:ui",
+      "title": "Aspect Ratio",
+      "description": "Aspect Ratio for image files",
+      "dependencies": [
+        "cn@^0.4.0"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/aspect-ratio.btsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "bubble",
+      "type": "registry:ui",
+      "title": "Bubble",
+      "description": "Bubble",
+      "dependencies": [
+        "@octanejs/base-ui@0.1.55",
+        "class-variance-authority@^0.7.1",
+        "cn@^0.4.0"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/bubble.btsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "checkbox",
+      "type": "registry:ui",
+      "title": "Checkbox",
+      "description": "Checkbox input element",
+      "dependencies": [
+        "@octanejs/base-ui@0.1.55",
+        "cn@^0.4.0",
+        "@beast-ui/icons@^0.1.0"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/checkbox.btsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "drawer",
+      "type": "registry:ui",
+      "title": "Drawer",
+      "description": "Drawer dialog",
+      "dependencies": [
+        "@octanejs/base-ui@0.1.55",
+        "cn@^0.4.0"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/drawer.btsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "popover",
+      "type": "registry:ui",
+      "title": "Popover",
+      "description": "Popover element",
+      "dependencies": [
+        "@octanejs/base-ui@0.1.55",
+        "cn@^0.4.0"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/popover.btsx",
+          "type": "registry:ui"
+        }
+      ]
     }
   ]
 }

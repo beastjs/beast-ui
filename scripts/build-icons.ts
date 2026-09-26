@@ -1,17 +1,34 @@
+// Builds an icons.ts module from a folder of .svg files. The canonical copy lives in
+// beast-ui/scripts/build-icons.ts; other apps copy it unchanged. See docs/icons.md.
+// Needs Bun and svgo (`bun add -d svgo`).
 import { readdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { parseArgs } from 'node:util'
 import { optimize, type CustomPlugin, type XastElement } from 'svgo'
 
 // Every icon is redrawn on this grid, so stroke widths and padding compare directly
 // and <Icon> can use one viewBox for all of them.
 const GRID = 24
-const iconName = /^[a-z][a-z0-9-]*$/
+// New icons should be lowercase words joined by dashes. Digits, dots and underscores
+// are allowed too, so apps keep the names they already use, such as `re-up.ph`.
+const iconName = /^[a-z0-9][a-z0-9._-]*$/
+const identifier = /^[a-z_$][a-z0-9_$]*$/i
+// Files in this subfolder of --svg keep their colors: brand logos, multi-color art.
+const COLOR_FOLDER = 'color'
 const shapes = new Set(['path', 'circle', 'ellipse', 'line', 'polygon', 'polyline', 'rect'])
 // Root attributes that describe the file rather than how the art is painted.
 const documentAttribute = /^(xmlns(:.*)?|viewBox|width|height|x|y|version|baseProfile|preserveAspectRatio|id|class|style|role|focusable|aria-.*|data-.*)$/
 // Any painted color, but not none, an existing currentColor or a url(#gradient) reference.
 const paintedColor = /^(?!none$|currentColor$|transparent$|inherit$|url\()/i
+// Folders --unused never reads.
+const skippedFolders = new Set(['node_modules', 'dist', 'build', 'out', 'coverage'])
+const sourceFile = /\.(tsx?|jsx?|mjs|cjs|btsx|tsrx|vue|svelte|astro|mdx?|json)$/
+
+export interface IconFile {
+  name: string
+  file: string
+  keepColors: boolean
+}
 
 // Scales the art onto the grid and moves paint attributes off the root <svg>, whose
 // attributes are dropped when the body is inlined into <Icon>. The root then gets the
@@ -28,9 +45,8 @@ function normalize(name: string): CustomPlugin {
             if (normalized) return
             normalized = true
             const viewBox = (node.attributes.viewBox ?? '').trim().split(/[\s,]+/).map(Number)
-            if (viewBox.length !== 4 || viewBox.some(Number.isNaN)) throw new Error(`${name}.svg needs a viewBox`)
+            if (viewBox.length !== 4 || viewBox.some(Number.isNaN) || viewBox[2] <= 0 || viewBox[3] <= 0) throw new Error(`${name}.svg needs a viewBox`)
             const [x, y, width, height] = viewBox
-            if (width !== height) throw new Error(`${name}.svg has a ${width}×${height} viewBox. Icons must be square.`)
             const paint: Record<string, string> = {}
             for (const [key, value] of Object.entries(node.attributes)) {
               if (!documentAttribute.test(key)) paint[key] = value
@@ -38,8 +54,12 @@ function normalize(name: string): CustomPlugin {
             }
             node.attributes.viewBox = `0 0 ${GRID} ${GRID}`
             node.attributes.fill = 'currentColor'
-            const scale = GRID / width
-            const transform = [scale !== 1 && `scale(${scale})`, (x !== 0 || y !== 0) && `translate(${-x} ${-y})`].filter(Boolean).join(' ')
+            // A wide or tall icon is centered in a square, as a browser draws it in a square <svg>.
+            const side = Math.max(width, height)
+            const scale = GRID / side
+            const dx = (side - width) / 2 - x
+            const dy = (side - height) / 2 - y
+            const transform = [scale !== 1 && `scale(${scale})`, (dx !== 0 || dy !== 0) && `translate(${dx} ${dy})`].filter(Boolean).join(' ')
             if (transform) paint.transform = transform
             if (Object.keys(paint).length) {
               const group: XastElement = { type: 'element', name: 'g', attributes: paint, children: node.children }
@@ -60,40 +80,100 @@ function normalize(name: string): CustomPlugin {
   }
 }
 
+// SVGO's prefixIds misreads timing values such as begin="0;spin.end+0.2s", so this prefixes
+// the ids they reference first. prefixIds leaves an already prefixed reference alone.
+function prefixTimings(name: string): CustomPlugin {
+  const prefix = `${name}-`
+  return {
+    name: 'prefixTimings',
+    fn: (root) => {
+      const ids = new Set<string>()
+      const collect = (node: XastElement) => {
+        if (node.attributes.id) ids.add(node.attributes.id)
+        for (const child of node.children) if (child.type === 'element') collect(child)
+      }
+      for (const child of root.children) if (child.type === 'element') collect(child)
+      return {
+        element: {
+          enter(node) {
+            for (const attribute of ['begin', 'end']) {
+              const value = node.attributes[attribute]
+              if (!value) continue
+              node.attributes[attribute] = value.split(/\s*;\s*/).map((part) => {
+                const id = part.slice(0, Math.max(0, part.indexOf('.')))
+                return ids.has(id) && !id.startsWith(prefix) ? prefix + part : part
+              }).join('; ')
+            }
+          },
+        },
+      }
+    },
+  }
+}
+
 /** Optimizes one icon and returns the markup that goes inside <Icon>'s <svg>. */
-export function buildIcon(name: string, source: string): string {
+export function buildIcon(name: string, source: string, { keepColors = false } = {}): string {
   if (!iconName.test(name)) throw new Error(`"${name}" is not a valid icon name. Use lowercase letters, digits and dashes.`)
-  const { data } = optimize(source, {
-    multipass: true,
-    plugins: [
-      normalize(name),
-      { name: 'preset-default', params: { overrides: { convertColors: { currentColor: paintedColor } } } },
-      // Two icons on one page must not share an id.
-      { name: 'prefixIds', params: { prefix: name, delim: '-' } },
-    ],
-  })
+  const colors = keepColors ? [] : [{ name: 'convertColors', params: { currentColor: paintedColor } } as const]
+  // An animation can target a transform, a radius or a path, so animated icons only get
+  // clean-ups that leave shapes and structure alone. Their grid transform stays on a <g>.
+  const animated = /<(animate\w*|set)\b/.test(source)
+  const optimizations = animated
+    ? (['removeComments', 'removeMetadata', 'removeEditorsNSData', 'cleanupAttrs', 'removeEmptyAttrs', ...colors] as const)
+    : ([{ name: 'preset-default', params: { overrides: keepColors ? {} : { convertColors: { currentColor: paintedColor } } } }] as const)
+  let data: string
+  try {
+    ;({ data } = optimize(source, {
+      multipass: true,
+      plugins: [
+        normalize(name),
+        ...optimizations,
+        // Two icons on one page must not share an id.
+        prefixTimings(name),
+        { name: 'prefixIds', params: { prefix: name, delim: '-' } },
+      ],
+    }))
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== 'SvgoParserError') throw error
+    const { reason, line, column } = error as Error & { reason: string; line: number; column: number }
+    throw new Error(`${name}.svg is not well-formed SVG: ${reason} at line ${line}, column ${column}. Browsers let this pass, but look for an unclosed tag or an attribute without a value.`)
+  }
   const body = data.match(/^<svg[^>]*>([\s\S]*)<\/svg>$/)
   if (!body || !body[1]) throw new Error(`${name}.svg has nothing to draw`)
   return body[1]
 }
 
-/** Icon names, from the .svg files in a directory. */
-export async function listIcons(directory: string): Promise<string[]> {
-  return (await readdir(directory)).filter((file) => file.endsWith('.svg')).map((file) => file.slice(0, -4)).sort()
+/** The icons in a folder: its .svg files, and those in its color/ subfolder. */
+export async function listIcons(directory: string): Promise<IconFile[]> {
+  const read = async (folder: string, keepColors: boolean) =>
+    (await readdir(folder)).filter((file) => file.endsWith('.svg')).map((file) => ({ name: file.slice(0, -4), file: path.join(folder, file), keepColors }))
+  let icons: IconFile[]
+  try {
+    icons = await read(directory, false)
+  } catch {
+    throw new Error(`${directory} does not exist. Pass the folder that holds your .svg files with --svg.`)
+  }
+  icons.push(...(await read(path.join(directory, COLOR_FOLDER), true).catch(() => [])))
+  const seen = new Set<string>()
+  for (const icon of icons) {
+    if (seen.has(icon.name)) throw new Error(`${icon.name}.svg is in both the svg folder and its ${COLOR_FOLDER}/ subfolder. Keep one.`)
+    seen.add(icon.name)
+  }
+  return icons.sort((a, b) => (a.name < b.name ? -1 : 1))
 }
 
 const quote = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`
 
-/** Builds the source of packages/icons/src/icons.ts from packages/icons/svg. */
-export async function buildIcons(root: string): Promise<string> {
-  const directory = path.join(root, 'packages/icons/svg')
+/** Builds the source of the icons.ts module at `output` from the .svg files in `directory`. */
+export async function buildIcons(directory: string, output: string): Promise<string> {
   const lines = []
-  for (const name of await listIcons(directory)) {
-    const body = buildIcon(name, await readFile(path.join(directory, `${name}.svg`), 'utf8'))
-    lines.push(`  ${name.includes('-') ? quote(name) : name}: ${quote(body)},`)
+  for (const icon of await listIcons(directory)) {
+    const body = buildIcon(icon.name, await readFile(icon.file, 'utf8'), { keepColors: icon.keepColors })
+    lines.push(`  ${identifier.test(icon.name) ? icon.name : quote(icon.name)}: ${quote(body)},`)
   }
+  const from = path.relative(path.dirname(output), directory).split(path.sep).join('/')
   return [
-    '// Generated by scripts/build-icons.ts from packages/icons/svg. Do not edit it by hand:',
+    `// Generated by build-icons.ts from ${from}. Do not edit it by hand:`,
     '// add or change an .svg file there, then run `bun run icons:build`.',
     '',
     `export const ICON_VIEWBOX = '0 0 ${GRID} ${GRID}'`,
@@ -107,19 +187,67 @@ export async function buildIcons(root: string): Promise<string> {
   ].join('\n')
 }
 
-if (import.meta.main) {
-  const root = fileURLToPath(new URL('../', import.meta.url))
-  const output = path.join(root, 'packages/icons/src/icons.ts')
-  const source = await buildIcons(root)
-  if (process.argv.includes('--check')) {
-    const current = await readFile(output, 'utf8').catch(() => '')
-    if (current !== source) {
-      console.error('packages/icons/src/icons.ts is out of date. Run `bun run icons:build`.')
-      process.exit(1)
+/**
+ * Names that never appear as a quoted string in the source files under `directory`. A name
+ * built at runtime, such as `${kind}-outline`, is not found, so check before deleting.
+ */
+export async function findUnused(names: string[], directory: string, ignore: string[] = []): Promise<string[]> {
+  const quoted = new Set<string>()
+  const ignored = new Set(ignore.map((file) => path.resolve(file)))
+  async function walk(folder: string) {
+    for (const entry of await readdir(folder, { withFileTypes: true })) {
+      const file = path.join(folder, entry.name)
+      if (ignored.has(file) || entry.name.startsWith('.')) continue
+      if (entry.isDirectory()) {
+        if (!skippedFolders.has(entry.name)) await walk(file)
+      } else if (sourceFile.test(entry.name)) {
+        for (const [, , value] of (await readFile(file, 'utf8')).matchAll(/(['"`])([a-z0-9][a-z0-9._-]*)\1/g)) quoted.add(value)
+      }
     }
-    console.log('packages/icons/src/icons.ts is up to date')
-  } else {
-    await writeFile(output, source)
-    console.log(`Built ${source.match(/^ {2}\S/gm)?.length ?? 0} icons → packages/icons/src/icons.ts`)
+  }
+  await walk(path.resolve(directory))
+  return names.filter((name) => !quoted.has(name))
+}
+
+const usage = `Builds an icons.ts module from a folder of .svg files. See docs/icons.md in beast-ui.
+
+  bun scripts/build-icons.ts --svg <folder> --out <file> [--check] [--unused <folder>]
+
+  --svg <folder>     the .svg files. Files in its ${COLOR_FOLDER}/ subfolder keep their colors.
+  --out <file>       the icons.ts module to write
+  --check            fail instead of writing when <file> is out of date
+  --unused <folder>  also list icons whose name never appears in quotes under <folder>`
+
+if (import.meta.main) {
+  const { values } = parseArgs({
+    options: { svg: { type: 'string' }, out: { type: 'string' }, check: { type: 'boolean' }, unused: { type: 'string' }, help: { type: 'boolean', short: 'h' } },
+  })
+  if (values.help || !values.svg || !values.out) {
+    console.log(usage)
+    process.exit(values.help ? 0 : 1)
+  }
+  const directory = path.resolve(values.svg)
+  const output = path.resolve(values.out)
+  const shown = path.relative(process.cwd(), output)
+  try {
+    const source = await buildIcons(directory, output)
+    const names = (await listIcons(directory)).map((icon) => icon.name)
+    if (values.check) {
+      if ((await readFile(output, 'utf8').catch(() => '')) !== source) {
+        console.error(`${shown} is out of date. Run \`bun run icons:build\`.`)
+        process.exit(1)
+      }
+      console.log(`${shown} is up to date`)
+    } else {
+      await writeFile(output, source)
+      console.log(`Built ${names.length} icons → ${shown}`)
+    }
+    if (values.unused) {
+      const unused = await findUnused(names, values.unused, [output, directory])
+      console.log(unused.length ? `Not found in ${values.unused} (${unused.length}): ${unused.join(', ')}` : `Every icon is used in ${values.unused}`)
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error))
+    process.exit(1)
   }
 }

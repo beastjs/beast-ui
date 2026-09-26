@@ -55,4 +55,4 @@ setup
   useEffect(() => applyTheme(theme), [theme])
 
 ThemeContext(value={value})
-  div(className="size-screen overflow-hidden") #{children}
+  div(className="w-screen overflow-hidden") #{children}

@@ -1,0 +1,6 @@
+import AspectRatio from "@beast-ui/registry/ui/aspect-ratio";
+
+props {}:{}
+div(className="flex flex-col items-center gap-6")
+  AspectRatio
+  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Aspect Ratio for image files
