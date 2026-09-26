@@ -28,7 +28,7 @@ div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
     h2#start-title(className="text-xl font-medium tracking-tight") Get started
     p(className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground") Start with a Beast + Octane app using Tailwind CSS v4. In that app, run:
     pre(className="mt-4 overflow-x-auto rounded-xl border border-border/40 bg-muted/50 p-5 font-mono text-xs leading-7")
-      code #{setupCommands}
+      code.code #{setupCommands}
     p(className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground") #{"Import src/styles/theme.css after Tailwind in your app stylesheet, and configure @/* to resolve to src/* in both TypeScript and your bundler."}
   section(className="mt-12" aria-labelledby="catalog-title")
     h2#catalog-title(className="text-xl font-medium tracking-tight") Components

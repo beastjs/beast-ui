@@ -3,6 +3,7 @@ import { Link, useParams } from "@octanejs/tanstack-router";
 import { addCommand, findComponent, itemUrl, variantsOf } from "../lib/catalog";
 import { componentHref } from "../lib/navs";
 import { previews } from "../previews";
+import Pad from "../components/Pad.btsx";
 
 props {}:{}
 setup
@@ -22,8 +23,9 @@ div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
               Link(to={componentHref(base.name)} className="underline underline-offset-4") #{base.title}
           h1(className="mt-3 text-3xl font-medium tracking-tight") #{component.title}
         // a(href={itemUrl(component.name)} className="text-sm text-muted-foreground underline underline-offset-4" target="_blank" rel="noopener noreferrer") View source JSON ↗
-      p(className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground") #{component.description}
-      section(className="mt-8 flex min-h-56 items-center justify-center rounded-xl border border-border/40 bg-muted/30 p-8" aria-label={`${component.title} preview`})
+      // p(className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground") #{component.description}
+      Pad
+      // section(className="mt-8 flex min-h-56 items-center justify-center rounded-xl border border-border/40 bg-muted/30 p-8" aria-label={`${component.title} preview`})
         if Preview
           Suspense(fallback={null})
             Preview
@@ -38,10 +40,10 @@ div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
               Link(to={componentHref(variant.name)} className="rounded-xl border border-border/40 p-4 transition-colors hover:bg-muted/60")
                 h3(className="text-sm font-medium") #{variant.title}
                 p(className="mt-1.5 text-sm leading-relaxed text-muted-foreground") #{variant.description}
-      section(className="mt-10" aria-labelledby="install-title")
-        h2#install-title(className="text-lg font-medium tracking-tight") Installation
-        pre(className="mt-3 overflow-x-auto rounded-xl border border-border/40 bg-muted/50 p-5 font-mono text-xs leading-7")
-          code #{addCommand(component.name)}
+      section(className="-mt-4 relative px-2 z-6" aria-labelledby="install-title")
+        pre(className="relative flex items-center overflow-x-auto rounded-b-3xl bg-linear-to-r from-muted/0 via-muted/20 to-muted/0 h-20 px-6 font-mono text-xs overflow-hidden")
+          div(className="z-4 absolute h-16 w-full infinite-lines pointer-events-none top-0 left-0")
+          code.code(className="relative mt-4 z-6 text-mist-600 dark:text-taupe-300/80") #{addCommand(component.name)}
         if component.registryDependencies.length > 0
           fragment
             h3(className="mt-5 text-sm font-medium") Also installs
@@ -51,11 +53,14 @@ div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
                   code(className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs") #{dependency}
         if component.dependencies.length > 0
           fragment
-            h3(className="mt-5 text-sm font-medium") npm dependencies
-            ul(className="mt-2 flex flex-wrap gap-1.5")
+            h2#install-title(className="text-lg font-medium tracking-tight") Deps
+            // (className="mt-2 flex flex-wrap gap-1.5")
+
+            ul(className="relative mt-3 overflow-x-auto _rounded-xl bg-linear-to-r from-muted/0 via-muted/20 to-muted/0 p-5 font-mono text-xs leading-7")
+              // div(className="z-4 absolute h-16 w-full infinite-lines pointer-events-none top-0 left-0 border border-border/10")
               each dependency in component.dependencies key dependency
                 li
-                  code(className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs") #{dependency}
+                  code(className="relative z-6 rounded bg-taupe-50/5 px-1.75 py-0.75 font-mono text-sm text-mist-500 dark:text-taupe-300/80 tracking-[0.069em]") #{dependency}
   else
     fragment
       h1(className="text-3xl font-medium tracking-tight") Component not found

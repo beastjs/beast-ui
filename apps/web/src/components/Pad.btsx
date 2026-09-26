@@ -1,0 +1,3 @@
+import { type OctaneNode } from "octane";
+props {children}: {children: OctaneNode}
+div(className="flex items-center justify-center relative z-10 mt-8 h-64 w-full bg-surface rounded-3xl border border-sidebar-border shadow-xs") #{children}

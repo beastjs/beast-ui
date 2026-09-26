@@ -6,10 +6,6 @@ import { Link } from "@octanejs/tanstack-router";
 import { REPOSITORY_URL } from "../lib/catalog";
 
 module
-  interface TopbarProps {
-      toggleSidebar: VoidFunction
-      isCompact?: boolean
-    }
   export interface BrandProps {
     className?: string
     children?: unknown
@@ -23,18 +19,16 @@ component Brand
 
 
   div(className={cn(BRAND_CLASS, className)})
-    Link(className="flex items-center gap-4 font-medium tracking-tight" to="/" aria-label="Beast UI home")
-      Icon(name="beast" className="size-8 m-0.75")
-      span Beast UI
+    Link(className="flex items-center gap-0.5 font-medium tracking-tight" to="/" aria-label="Beast UI home")
+      Icon(name="beast" className="size-4.5 mr-2.5 text-mist-700 dark:text-taupe-300")
+      div(className='skew-2 text-mist-500 dark:text-taupe-400/80') Beast
+      span(className='opacity-100 text-base font-black text-mist-700 dark:text-taupe-400 tracking-wide') UI
     div #{children}
 
 
-props { toggleSidebar, isCompact = false }: TopbarProps
-header(className="topbar sticky top-0 z-40 bg-surface/20 backdrop-blur-3xl w-full w-full px-3.5 flex items-center justify-between gap-4")
+props {}: {}
+header(className="topbar sticky top-0 z-40 bg-background/10 backdrop-blur-3xl w-full w-full px-3.5 flex items-center justify-between gap-4")
   Brand
-    div(className="hidden md:flex items-center")
-      button(className="size-6 aspect-square place-items-center text-input hover:text-foreground/80 hover:border-input transition" onClick={toggleSidebar} aria-label={isCompact ? "Expand sidebar" : "Compact sidebar"} aria-pressed={isCompact} title={isCompact ? "Expand sidebar" : "Compact sidebar"})
-        Icon(name='sidebar' className="size-5 m-0.75")
   div(className="flex items-center gap-2")
     ThemeToggle
-    Button(label="GitHub" variant='default' size="sm" type='a' href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" className="hidden md:flex")
+    // Button(label="GitHub" variant='default' size="sm" type='a' href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer" className="hidden md:flex")

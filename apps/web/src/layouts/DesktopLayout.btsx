@@ -1,6 +1,5 @@
-import { useState } from "octane";
 import { Outlet, useLocation } from "@octanejs/tanstack-router";
-import { Group, Panel, Separator, useDefaultLayout, usePanelRef } from "@octanejs/resizable-panels";
+import { Group, Panel, Separator, useDefaultLayout } from "@octanejs/resizable-panels";
 import Topbar from "../components/Topbar.btsx";
 import Sidebar from "../components/Sidebar.btsx";
 import Container from "../components/Container.btsx";
@@ -12,23 +11,14 @@ props {}:{}
 setup
   const path = useLocation({ select: (location) => location.pathname })
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({ id: "app-layout", panelIds: ["sidebar", "content"] })
-  const sidebarRef = usePanelRef()
-  const [isCompact, setIsCompact] = useState(false)
-  const syncCompact = () => setIsCompact(sidebarRef.current?.isCollapsed() ?? false)
-  const toggleCompact = () => {
-    const panel = sidebarRef.current
-    if (panel === null) return
-    if (panel.isCollapsed()) panel.expand()
-    else panel.collapse()
-  }
 fragment
   div(className='hidden md:block sticky top-0 z-40')
-    Topbar(toggleSidebar={toggleCompact} isCompact={isCompact})
+    Topbar
   // Group sets an inline height: 100%, so the height below the topbar lives on this wrapper.
   div(className="h-[calc(100dvh-var(--topbar-height))] overflow-hidden")
     Group(orientation="horizontal" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged})
-      Panel(id="sidebar" panelRef={sidebarRef} defaultSize="200px" minSize="200px" maxSize="300px" collapsible collapsedSize="64px" onResize={syncCompact})
-        Sidebar(path={path} isCompact={isCompact})
+      Panel(id="sidebar" defaultSize="200px" minSize="200px" maxSize="300px")
+        Sidebar(path={path})
       Separator(aria-label="Resize sidebar" className={SEPARATOR_CLASS})
       Panel(id="content" minSize="30%")
         Container
