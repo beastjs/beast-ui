@@ -1,4 +1,4 @@
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import type { ComponentProps, CSSProperties } from "octane";
 
 props { ratio, className, ...props }: ComponentProps<"div"> & {

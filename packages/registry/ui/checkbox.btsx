@@ -1,6 +1,6 @@
 module "use client";
 import { Checkbox as CheckboxPrimitive } from "@octanejs/base-ui/checkbox";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 // import Icon from "@beast-ui/icons";
 
 props { className, ...props }: CheckboxPrimitive.Root.Props

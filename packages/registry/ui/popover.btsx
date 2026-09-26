@@ -1,6 +1,6 @@
 module "use client";
 import { Popover as PopoverPrimitive } from "@octanejs/base-ui/popover";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import type { ComponentProps } from "octane";
 module
   export { PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger };

@@ -1,7 +1,7 @@
 import { mergeProps } from "@octanejs/base-ui/merge-props";
 import { useRender } from "@octanejs/base-ui/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import type { ComponentProps } from "octane";
 module
   const bubbleVariants = cva("cn-bubble group/bubble relative flex w-fit min-w-0 flex-col", {

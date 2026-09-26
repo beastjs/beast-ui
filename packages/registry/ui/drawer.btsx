@@ -1,6 +1,6 @@
 module "use client";
 import { Drawer as DrawerPrimitive } from "@octanejs/base-ui/drawer";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import { createContext, useContext, useMemo } from "octane";
 import type { ComponentProps } from "octane";
 module
