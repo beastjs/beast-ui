@@ -34,7 +34,7 @@ svg/color/*.svg ─┘   (scripts/build-icons.ts)
 | `svg/<name>.svg` | One icon, as exported from its icon set or your editor. | You |
 | `svg/color/<name>.svg` | An icon that keeps its own colors, such as a brand logo. | You |
 | `icons.ts` | Every icon's markup keyed by name, and the `IconName` type. | The build. Never by hand. |
-| `Icon.btsx` or `index.tsx` | The component. | Copied once from this repo |
+| `Icon.btsx` or `Icon.tsx` | The component. | Copied once from this repo |
 | `scripts/build-icons.ts` | The build. | Copied once from this repo |
 
 The file name is the icon's name: `svg/search.svg` is `name="search"`.
@@ -61,7 +61,8 @@ The build runs each file through [SVGO](https://svgo.dev). For each file it:
    shapes, `transform-origin="0 0"`, default values, and extra digits in paths.
 6. **Prefixes ids with the icon name.** An id `g` in `search.svg` becomes
    `search-g`, and so do the gradients and animation timings that refer to it,
-   so two icons on one page never share an id.
+   so different icons do not share IDs. `Icon` scopes these IDs and references
+   again with the framework's `useId`, so repeated instances stay separate too.
 7. **Leaves the shapes of an animated icon alone.** An animation can target a
    transform, a radius or a path. Animated icons only get the clean-ups in
    step 5, and the grid transform from step 2 stays on a wrapping `<g>`.
@@ -150,7 +151,7 @@ src/lib/icons/          lib/icons/ in Next.js apps without src/
   Icon.btsx             Beast apps: the component
   types.ts              Beast apps: IconProps
   index.ts              Beast apps: what @/lib/icons exports
-  index.tsx             React apps: the component and its exports
+  Icon.tsx              React apps: the component (types.ts and index.ts alongside it)
 scripts/build-icons.ts  the build, copied from beast-ui
 ```
 
@@ -159,102 +160,64 @@ not every file that draws an icon.
 
 ## Set up a new app
 
-Run these from the app's folder. The paths use `src/lib/icons`. Use
-`lib/icons` if that is where the app keeps `lib`.
+Run from an existing app with a `package.json` and Bun installed:
 
-1. Add SVGO and the build:
-
-   ```bash
-   bun add -d svgo
-   ```
-
-   ```bash
-   mkdir -p scripts src/lib/icons/svg && cp ~/Code/beast-ui/scripts/build-icons.ts scripts/
-   ```
-
-2. Add two scripts to `package.json`:
-
-   ```json
-   "icons:build": "bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts",
-   "icons:check": "bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts --check"
-   ```
-
-3. Add the component.
-   - Beast apps: copy it from this repo.
-
-     ```bash
-     cp ~/Code/beast-ui/packages/icons/src/{Icon.btsx,types.ts,index.ts} src/lib/icons/
-     ```
-
-   - React and Next.js apps: save [the React component](#the-react-component)
-     as `src/lib/icons/index.tsx`.
-4. Save a first icon, such as `src/lib/icons/svg/search.svg`, then build:
-
-   ```bash
-   bun run icons:build
-   ```
-
-5. Draw it. In Beast, `import { Icon } from '@/lib/icons'` and then
-   `Icon(name="search" className="size-4")`. In React,
-   `<Icon name="search" className="size-4" />`.
-6. Run `bun run icons:check` wherever the app's checks run, such as CI or a
-   pre-commit hook, so a changed `.svg` without a rebuilt `icons.ts` fails.
-
-This needs the `@/*` path alias in `tsconfig.json`, and in Beast apps a
-`declare module '*.btsx'` in `env.d.ts`. All your apps already have both.
-
-### The React component
-
-```tsx
-import type { SVGProps } from 'react'
-import { ICON_VIEWBOX, icons, type IconName } from './icons'
-
-export type { IconName }
-
-export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name' | 'color' | 'dangerouslySetInnerHTML'> {
-  name: IconName
-  /** Width and height in pixels. A size class such as `size-5` overrides it. */
-  size?: number
-  /** Any CSS color. Without it the icon takes the surrounding text color. */
-  color?: string
-  /** Names an icon that means something on its own. Without it the icon is hidden from screen readers. */
-  label?: string
-}
-
-export function Icon({ name, size = 16, color, label, style, ...props }: IconProps) {
-  return (
-    <svg
-      xmlns='http://www.w3.org/2000/svg'
-      viewBox={ICON_VIEWBOX}
-      width={size}
-      height={size}
-      fill='currentColor'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-      role={label ? 'img' : undefined}
-      aria-label={label}
-      aria-hidden={label ? undefined : true}
-      suppressHydrationWarning
-      {...props}
-      style={{ flexShrink: 0, color, ...style }}
-      dangerouslySetInnerHTML={{ __html: icons[name] }}
-    />
-  )
-}
+```bash
+bunx @beastjs/cli icons init --dry-run
+bunx @beastjs/cli icons init
 ```
 
-It differs from the Beast one in three ways:
+For React (including Next.js), add `--framework react`. Use `--cwd <path>` to
+set up another project. This command does not need `beast-ui.json` or the
+component registry.
 
-- `size` defaults to `16`, as in your React apps. The Beast one defaults to
-  `20`. Keep whichever the app used before.
-- It passes any other `<svg>` prop through, such as `onClick`, `style` or
-  `strokeWidth`, as your React component did.
-- It has no `'use client'`. It has no state or effects, so Next.js can render
-  it on the server. See [Size and speed](#size-and-speed).
+It creates:
 
-It keeps `suppressHydrationWarning` from your current component. Both
-components set round line caps and joins on the root, as the old ones did, so
-icons that relied on them look the same.
+```text
+src/lib/icons/
+  svg/
+    search.svg
+    menu.svg
+    close.svg
+    arrow-right.svg
+    color/
+  Icon.btsx       Icon.tsx for React
+  types.ts
+  index.ts
+  icons.ts
+scripts/build-icons.ts
+```
+
+It installs SVGO as a dev dependency, adds `icons:build` and `icons:check` to
+`package.json`, and runs the first build. Other package settings are preserved.
+Identical existing files are kept. Different files or existing scripts with
+other commands are reported as conflicts, and the command stops before making
+changes. There is no overwrite flag. Dry runs list all files, directories,
+scripts, dependencies, commands, and conflicts without writing or installing.
+If installation fails after scaffolding, fix the installation error and rerun.
+
+The scripts are:
+
+```json
+"icons:build": "bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts",
+"icons:check": "bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts --check"
+```
+
+Import `Icon` from `@/lib/icons`. In Beast, use
+`Icon(name="search" className="size-4")`; in React, use
+`<Icon name="search" className="size-4" />`. Both default to 20px.
+The project needs an `@/*` alias pointing at `src/*`; Beast also needs its
+usual `.btsx` module declaration. The command assumes the selected framework
+is already installed.
+
+Add SVGs to `src/lib/icons/svg/`, then run `bun run icons:build`. Colored art
+belongs in `svg/color/`. Commit the SVGs and generated `icons.ts`, and add
+`bun run icons:check` to CI.
+
+The React component passes through SVG props and uses `useId` to scope SVG
+IDs. It includes `'use client'` for Next.js compatibility and supports server
+rendering of that client component. The generated component source is in
+[`packages/cli/templates/Icon.tsx.txt`](../packages/cli/templates/Icon.tsx.txt).
 
 ## Move an existing app over
 
@@ -266,8 +229,10 @@ came out the same.
 
 Work on a branch with a clean working tree, from the app's folder.
 
-1. **Add SVGO, the build and the scripts:** steps 1 and 2 of
-   [Set up a new app](#set-up-a-new-app).
+1. **Add SVGO, the build and the scripts:** the scripts shown in
+   [Set up a new app](#set-up-a-new-app). Install SVGO with `bun add -d svgo`
+   and copy `scripts/build-icons.ts` from this repo; migrate before using
+   `icons init`, which preserves existing files.
 2. **Write the `.svg` files from the old maps.** List every map file. Leave
    out `unused.ts`.
 
@@ -328,8 +293,9 @@ Work on a branch with a clean working tree, from the app's folder.
      cp ~/Code/beast-ui/packages/icons/src/{Icon.btsx,types.ts,index.ts} src/lib/icons/
      ```
 
-   - React apps: replace `index.tsx` with [the React component](#the-react-component),
-     and delete `types.ts`.
+   - React apps: use the React template as `Icon.tsx` with `types.ts` from
+     `packages/cli/templates/react-types.ts.txt` and an `index.ts` exporting it.
+     Delete the old `index.tsx` after updating its imports.
    - Both: delete `logos.ts`, `dev.ts` and `unused.ts`. Their icons are in
      `svg/` now.
 7. **Update the call sites.** This lists what to change:
@@ -407,11 +373,9 @@ Three things keep it small:
 
    A name built at runtime, such as `` `${kind}-outline` ``, is not found, so
    check each one before deleting its file. Then run `bun run icons:build`.
-2. **In Next.js, keep `Icon` a server component.** Without `'use client'`, a
-   page that draws icons only from server components sends no icon data to the
-   browser. A client component that draws an icon still pulls `icons.ts` into
-   the client bundle. 27 of your 30 React apps have `'use client'` at the top
-   of their icon component today.
+2. **The React template is a client component.** Its `useId` hook keeps IDs
+   stable during server rendering and hydration. Importing it into a Next.js
+   server page still brings the icon map into the client bundle.
 3. **If a client bundle is still too large after that, switch to an SVG
    sprite.** The build would write one `icons.svg` that the browser downloads
    and caches once, and `Icon` would draw `<use href="/icons.svg#search"/>`.
@@ -433,8 +397,9 @@ for f in ~/Code/*/scripts/build-icons.ts; do cmp -s "$f" ~/Code/beast-ui/scripts
 To update an app, copy the file over, run `bun run icons:build`, and commit
 `icons.ts` if it changed.
 
-Later, the build could become a command of the published `@beastjs/cli`, so
-apps would update by bumping a version instead of copying a file.
+`@beastjs/cli icons init` embeds the canonical build script at CLI build time.
+It preserves differing existing copies; updating an established app still means
+reviewing and copying the new script, then rebuilding its icons.
 
 ## Reference
 
@@ -470,7 +435,7 @@ It exits with an error when it skipped anything, after writing the rest.
 | Prop | Beast | React |
 | --- | --- | --- |
 | `name` | Required. An `IconName`. | Same |
-| `size` | Width and height in pixels. Default `20`. | Default `16` |
+| `size` | Width and height in pixels. Default `20`. | Default `20` |
 | `className` | Classes for the `<svg>`, as a string, array or object. | A string |
 | `color` | Any CSS color. Default: the text color. | Same |
 | `label` | Names an icon that means something on its own. Without it the icon is hidden from screen readers. | Same |

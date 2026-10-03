@@ -6,6 +6,7 @@ import { toPascal, toTitle } from '../registry-import/analyze.ts'
 import { paths, previewSource, readRegistry, registeredIcon, registerPreview } from '../registry-import/apply.ts'
 import { ask, confirm, fail, iconNames, list, say } from '../lib/prompt.ts'
 import { checkPreview } from './check.ts'
+import { COHERE_MODEL, draftPreviewForComponent } from './cohere.ts'
 import { booleanStatus, composePreview, controlledPairs, initialFor, plural, valueStatus, type PreviewExample, type PreviewRow, type PreviewSpec, type PreviewState } from './compose.ts'
 import { analyzeProps, type ComponentProps, type PropInfo } from './props.ts'
 
@@ -135,17 +136,20 @@ async function askSpec(root: string, prompt: Interface, name: string, info: Comp
   const examples = await askExamples(prompt, info, label)
   const note = await ask(prompt, 'Note under the preview', { initial: item?.description ?? '', hint: '- for none' })
 
-  const index = await readFile(path.join(root, paths.previews), 'utf8')
-  let icon: string | undefined
-  if (!registeredIcon(index, name)) {
-    const icons = await iconNames(root)
-    const baseIcon = item?.meta?.variantOf ? registeredIcon(index, item.meta.variantOf) : undefined
-    icon = await ask(prompt, 'Showcase icon', { initial: baseIcon ?? 'folder', hint: icons.join(', '), validate: (value) => icons.includes(value) ? undefined : `Choose one of: ${icons.join(', ')}.` })
-  }
+  const icon = await askIcon(root, prompt, name)
   return {
     spec: { name, component: toPascal(name), state, rows, base: base === '-' ? '' : base, label, examples, note: note === '-' ? '' : note },
     icon,
   }
+}
+
+async function askIcon(root: string, prompt: Interface, name: string): Promise<string | undefined> {
+  const item = (await readRegistry(root)).items.find((entry) => entry.name === name)
+  const index = await readFile(path.join(root, paths.previews), 'utf8')
+  if (registeredIcon(index, name)) return undefined
+  const icons = await iconNames(root)
+  const baseIcon = item?.meta?.variantOf ? registeredIcon(index, item.meta.variantOf) : undefined
+  return ask(prompt, 'Showcase icon', { initial: baseIcon ?? 'folder', hint: icons.join(', '), validate: (value) => icons.includes(value) ? undefined : `Choose one of: ${icons.join(', ')}.` })
 }
 
 export interface SessionResult {
@@ -153,8 +157,29 @@ export interface SessionResult {
   quit: boolean
 }
 
+/** Drafts one spec with Cohere, returning undefined (after reporting) on failure. */
+async function draftSpec(root: string, name: string, model: string | undefined): Promise<PreviewSpec | undefined> {
+  try {
+    const spec = await draftPreviewForComponent(root, name, { model })
+    say(`  ${paint('dim', `Drafted with ${model ?? process.env.COHERE_MODEL ?? COHERE_MODEL}. Check it below.`)}`)
+    say()
+    return spec
+  } catch (error) {
+    fail(`AI draft failed: ${error instanceof Error ? error.message : String(error)} Answer the questions instead.`)
+    say()
+    return undefined
+  }
+}
+
+export interface PreviewSessionOptions {
+  /** Draft each spec with the Cohere chat API first, falling back to questions. */
+  ai?: boolean
+  /** Model for AI drafts. Defaults to COHERE_MODEL, then north-mini-code-1-0. */
+  model?: string
+}
+
 /** Walks the named components, writing one preview each. */
-export async function previewSession(root: string, prompt: Interface, names: string[]): Promise<SessionResult> {
+export async function previewSession(root: string, prompt: Interface, names: string[], options: PreviewSessionOptions = {}): Promise<SessionResult> {
   const written: string[] = []
   for (const [position, name] of names.entries()) {
     const item = (await readRegistry(root)).items.find((entry) => entry.name === name)
@@ -175,8 +200,10 @@ export async function previewSession(root: string, prompt: Interface, names: str
     }
     showProps(info)
 
+    let draft = options.ai ? await draftSpec(root, name, options.model) : undefined
     for (;;) {
-      const { spec, icon } = await askSpec(root, prompt, name, info)
+      const { spec, icon } = draft ? { spec: draft, icon: await askIcon(root, prompt, name) } : await askSpec(root, prompt, name, info)
+      draft = undefined
       const source = composePreview(spec)
       say()
       say(`  ${paint('dim', `${paths.preview(name)}`)}`)

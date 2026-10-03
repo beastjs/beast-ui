@@ -3,6 +3,7 @@ import path from 'node:path'
 import { Command, Option } from 'commander'
 import type { Config } from '@beast-ui/registry/schema'
 import packageJson from '../package.json' with { type: 'json' }
+import { initIcons, type IconsInitOptions } from './commands/icons.ts'
 import { addComponents } from './commands/add.ts'
 import { DEFAULT_REGISTRY, findConfig, initConfig } from './utils/config.ts'
 import { fetchCatalog } from './utils/registry.ts'
@@ -23,6 +24,14 @@ const program = new Command()
   .name('beast-ui')
   .description('Install Beast UI source components into a Beast + Octane project')
   .version(packageJson.version)
+
+const iconsCommand = program.command('icons').description('Set up a typed SVG icon pipeline')
+iconsCommand.command('init')
+  .description('Create icons, install SVGO, configure scripts, and build')
+  .option('-c, --cwd <path>', 'Target project directory', '.')
+  .addOption(new Option('--framework <name>', 'Component framework').choices(['beast', 'react']).default('beast'))
+  .option('--dry-run', 'Show all files, scripts, dependencies, commands, and conflicts without changing anything')
+  .action(async (options: IconsInitOptions) => { await initIcons(options) })
 
 program.command('init')
   .description('Create beast-ui.json in an existing Beast project')

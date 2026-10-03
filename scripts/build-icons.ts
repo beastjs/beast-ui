@@ -17,7 +17,7 @@ const identifier = /^[a-z_$][a-z0-9_$]*$/i
 const COLOR_FOLDER = 'color'
 const shapes = new Set(['path', 'circle', 'ellipse', 'line', 'polygon', 'polyline', 'rect'])
 // Root attributes that describe the file rather than how the art is painted.
-const documentAttribute = /^(xmlns(:.*)?|viewBox|width|height|x|y|version|baseProfile|preserveAspectRatio|id|class|style|role|focusable|aria-.*|data-.*)$/
+const documentAttribute = /^(xmlns(:.*)?|viewBox|width|height|x|y|version|baseProfile|preserveAspectRatio|role|focusable|aria-.*|data-.*)$/
 // Any painted color, but not none, an existing currentColor or a url(#gradient) reference.
 const paintedColor = /^(?!none$|currentColor$|transparent$|inherit$|url\()/i
 // Folders --unused never reads.
@@ -60,7 +60,14 @@ function normalize(name: string): CustomPlugin {
             const dx = (side - width) / 2 - x
             const dy = (side - height) / 2 - y
             const transform = [scale !== 1 && `scale(${scale})`, (dx !== 0 || dy !== 0) && `translate(${dx} ${dy})`].filter(Boolean).join(' ')
-            if (transform) paint.transform = transform
+            // Keep normalization outside the original transform (and any CSS transform).
+            if (transform) {
+              const children = Object.keys(paint).length
+                ? [{ type: 'element' as const, name: 'g', attributes: paint, children: node.children }]
+                : node.children
+              node.children = [{ type: 'element', name: 'g', attributes: { transform }, children }]
+              return
+            }
             if (Object.keys(paint).length) {
               const group: XastElement = { type: 'element', name: 'g', attributes: paint, children: node.children }
               node.children = [group]
@@ -93,15 +100,19 @@ function prefixTimings(name: string): CustomPlugin {
         for (const child of node.children) if (child.type === 'element') collect(child)
       }
       for (const child of root.children) if (child.type === 'element') collect(child)
+      const timingIds = [...ids].sort((a, b) => b.length - a.length)
       return {
         element: {
           enter(node) {
+            for (const attribute of ['aria-labelledby', 'aria-describedby']) {
+              if (node.attributes[attribute]) node.attributes[attribute] = node.attributes[attribute].split(/\s+/).map(id => ids.has(id) && !id.startsWith(prefix) ? prefix + id : id).join(' ')
+            }
             for (const attribute of ['begin', 'end']) {
               const value = node.attributes[attribute]
               if (!value) continue
               node.attributes[attribute] = value.split(/\s*;\s*/).map((part) => {
-                const id = part.slice(0, Math.max(0, part.indexOf('.')))
-                return ids.has(id) && !id.startsWith(prefix) ? prefix + part : part
+                const id = timingIds.find(id => part.startsWith(id + '.'))
+                return id && !id.startsWith(prefix) ? prefix + part : part
               }).join('; ')
             }
           },
@@ -126,9 +137,10 @@ export function buildIcon(name: string, source: string, { keepColors = false } =
     ;({ data } = optimize(source, {
       multipass: true,
       plugins: [
+        'convertStyleToAttrs',
         normalize(name),
         ...optimizations,
-        // Two icons on one page must not share an id.
+        // Namespace different icons; Icon also scopes IDs to each rendered instance.
         prefixTimings(name),
         { name: 'prefixIds', params: { prefix: name, delim: '-' } },
       ],
@@ -162,6 +174,36 @@ export async function listIcons(directory: string): Promise<IconFile[]> {
   return icons.sort((a, b) => (a.name < b.name ? -1 : 1))
 }
 
+const markupSource = [
+  "/** Scope SVG definitions and their references to one framework useId() value. */",
+  "export function iconMarkup(name: IconName, instanceId: string): string {",
+  "  const body = icons[name]",
+  "  const ids = new Map([...body.matchAll(/\\sid=\"([^\"]+)\"/g)].map(([, id]) => [id, `icon-${Array.from(instanceId, c => c.codePointAt(0)!.toString(16)).join('-')}-${id}`]))",
+  "  if (!ids.size) return body",
+  "  const scoped = (id: string) => ids.get(id) ?? id",
+  "  let markup = body.replace(/ (id|href|xlink:href|aria-labelledby|aria-describedby|begin|end)=\"([^\"]*)\"/g, (attribute, key: string, value: string) => {",
+  "    if (key === 'id') return ` id=\"${scoped(value)}\"`",
+  "    if (key === 'href' || key === 'xlink:href') return ` ${key}=\"${value.startsWith('#') ? '#' + scoped(value.slice(1)) : value}\"`",
+  "    if (key.startsWith('aria-')) return ` ${key}=\"${value.split(/\\s+/).map(scoped).join(' ')}\"`",
+  "    return ` ${key}=\"${value.split(';').map(part => {",
+  "      const leading = part.match(/^\\s*/)?.[0] ?? ''",
+  "      const timing = part.trimStart()",
+  "      // Longest first: IDs may contain dots, as may animation event names.",
+  "      const id = [...ids.keys()].sort((a, b) => b.length - a.length).find(id => timing.startsWith(id + '.'))",
+  "      return id ? leading + scoped(id) + timing.slice(id.length) : part",
+  "    }).join(';')}\"`",
+  "  })",
+  "  markup = markup.replace(/url\\(\\s*(['\"]?)#([^\\s)'\"]+)\\1\\s*\\)/g, (_, quote: string, id: string) => `url(${quote}#${scoped(id)}${quote})`)",
+  "  // SVGO prefixes stylesheet selectors at build time; scope them at render time too.",
+  "  return markup.replace(/<style([^>]*)>([\\s\\S]*?)<\\/style>/g, (_, attributes: string, css: string) =>",
+  "    `<style${attributes}>${css.replace(/#((?:\\\\.|[a-zA-Z0-9_-])+)/g, (match, selector: string) => {",
+  "      const id = selector.replace(/\\\\(.)/g, '$1')",
+  "      return ids.has(id) ? '#' + scoped(id).replace(/\\./g, '\\\\.') : match",
+  "    })}</style>`)",
+  "}",
+  '',
+].join('\n')
+
 const quote = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`
 
 /** Builds the source of the icons.ts module at `output` from the .svg files in `directory`. */
@@ -184,6 +226,7 @@ export async function buildIcons(directory: string, output: string): Promise<str
     '',
     'export type IconName = keyof typeof icons',
     '',
+    markupSource,
   ].join('\n')
 }
 

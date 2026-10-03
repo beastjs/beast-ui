@@ -7,6 +7,7 @@ registry item with a showcase page:
 | --- | --- |
 | `bun run registry:import` | Adds the components in `staging/` to the registry: their source, their `registry.json` entry, any new npm packages, and a showcase entry. |
 | `bun run showcase:preview` | Writes a component's showcase preview from its props, and checks the preview before writing it. |
+| `bun run showcase:pending` | Lists components still waiting for a hand-written preview (`--json` for machines). |
 
 The usual flow is:
 
@@ -171,7 +172,15 @@ component with its description, until you run `bun run showcase:preview`.
 ```bash
 bun run showcase:preview                  # every missing or starter preview
 bun run showcase:preview squishy button   # redo these, asking before replacing hand-written ones
+bun run showcase:preview --ai squishy     # draft the spec with Cohere first, then confirm
 ```
+
+With `--ai`, each spec is drafted first with the Cohere chat API
+(`north-mini-code-1-0` unless `COHERE_MODEL` or `--model` says otherwise;
+the key comes from `COHERE_API_KEY`). A failed draft falls back to the
+questions below, and every preview — drafted or answered — is still compiled,
+typechecked, and confirmed at **Write it?** before anything is written.
+Drafts stream from the model and can take a few minutes per component.
 
 A preview lives at `apps/web/src/previews/<name>-preview.btsx` and is
 registered in `apps/web/src/previews/index.ts`. The name ends in `-preview`

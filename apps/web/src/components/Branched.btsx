@@ -1,0 +1,77 @@
+import { cn } from "../lib/utils"
+import { navGroups } from "../lib/navs"
+import { components } from "../lib/catalog"
+import { Link } from "@octanejs/tanstack-router"
+import BranchedMenu from "./ui/BranchedMenu.btsx";
+
+module
+  export interface BranchedItemProps {
+    href: string
+    label: string
+    value: string | number
+    path?: string
+    nested?: boolean
+  }
+
+  const BRANCHED_CLASS = "hidden md:flex flex-col w-full h-[calc(100dvh-var(--topbar-height))] bg-surface dark:bg-background/80 border-t-[0.5px] border-Branched-border overflow-hidden"
+  const BRANCHED_ITEM_CLASS = "flex w-full items-center gap-1.75 rounded-[10px] border h-[36px] px-3 text-left transition-all duration-200 ease-out"
+  const BRANCHED_ITEM_SELECTED_CLASS = "bg-[linear-gradient(in_oklab_180deg,oklab(95.2%_0_0)_0%,oklab(91.3%_0_0)_100%)] shadow-[inset_0_1px_0_#FFFFFF54,0_2.5px_3.5px_-1px_#00000026,0_0_0_1px_#D4D4D4] bg-origin-border dark:bg-origin-border dark:bg-[linear-gradient(in_oklab_180deg,oklab(32%_0_0)_0%,oklab(25%_0_0)_100%)] dark:shadow-none dark:hover:brightness-115 hover:brightness-102 border-border/0"
+  const BRANCHED_ITEM_DEFAULT_CLASS = "border-transparent bg-surface dark:bg-transparent hover:bg-Branched/70 dark:hover:bg-Branched"
+  const BRANCHED_LABEL_CLASS = "flex-1 font-sans font-medium text-muted-foreground text-sm md:text-[14.5px] leading-5 tracking-[0.20px] truncate"
+  const BRANCHED_SELECTED_TEXT_CLASS = "text-primary"
+  const BRANCHED_ITEM_NESTED_CLASS = "ml-5 w-[calc(100%-1.25rem)] py-0.5 [&_span]:text-[13px]"
+
+  export { BranchedNav }
+
+component BranchedItem
+  props { href, label, path, nested = false }: BranchedItemProps
+  setup
+    const isSelected = path === href
+    const itemClassName = cn(BRANCHED_ITEM_CLASS, isSelected ? BRANCHED_ITEM_SELECTED_CLASS : BRANCHED_ITEM_DEFAULT_CLASS, nested && BRANCHED_ITEM_NESTED_CLASS)
+    const labelClassName = cn(BRANCHED_LABEL_CLASS, isSelected && BRANCHED_SELECTED_TEXT_CLASS)
+
+  if href.startsWith("http")
+    a(href={href} className={itemClassName} target="_blank" rel="noopener noreferrer")
+      span(className={BRANCHED_LABEL_CLASS}) #{label}
+  else
+    Link(to={href} className={itemClassName} aria-current={isSelected ? "page" : undefined})
+      span(className={labelClassName}) #{label}
+
+
+component BranchedNav
+  props { path, className }: { path: string; className?: string }
+  setup
+    const navigate = (value: string, item: unknown) => void
+  BranchedMenu(items={navGroups} className={cn("p-3 space-y-6", className)}
+    ~  defaultOpen={[0]}
+    ~  defaultActive="quick"
+    ~  onSelect={navigate}
+    ~  color="#f5f5f5"
+    ~  accentColor="#f5f5f5"
+    ~  lineColor="#3f3f46"
+    ~  width={240}
+    ~  rowHeight={36}
+    ~  indent={40}
+    ~  trunk={14}
+    ~  radius={10}
+    ~  lineWidth={1.5}
+    ~  fontSize={14}
+    ~  drawDuration={400}
+    ~  foldDuration={300}
+    ~ )
+    // each group in navGroups
+    //   div(key={group.title})
+    //     div(className="meta dark:text-taupe-500! underline underline-offset-5 decoration-[0.5px] decoration-dashed dark:decoration-taupe-500/50 px-2 mb-2") #{group.title}
+    //     nav(className="space-y-1" aria-label={group.title})
+    //       each item in group.items key item.href
+    //         BranchedItem({...item} path={path})
+
+props { path }: { path: string }
+aside(className={BRANCHED_CLASS})
+  BranchedNav(path={path} className="flex-1 overflow-y-auto max-h-[calc(100dvh-var(--topbar-height))]")
+
+  div(className="h-10")
+    div(className="flex items-center h-10 gap-2 px-2-xs bg-background invert")
+      div(className="flex-1 min-w-0")
+        div(className="text-xs font-medium text-foreground leading-none")
+        div(className="text-2xs font-mono text-muted-foreground px-4") #{`${components.length} components`}

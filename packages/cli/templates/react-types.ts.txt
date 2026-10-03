@@ -1,0 +1,11 @@
+import type { SVGProps } from 'react'
+import type { IconName } from './icons'
+
+export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name' | 'color' | 'dangerouslySetInnerHTML' | 'children'> {
+  name: IconName
+  /** Width and height in pixels. A size class overrides it. */
+  size?: number
+  color?: string
+  /** Without a label the icon is hidden from screen readers. */
+  label?: string
+}

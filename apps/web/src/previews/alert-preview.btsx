@@ -1,6 +1,15 @@
 import Alert from "@beast-ui/registry/ui/alert";
 
+module
+  const variants = ["default", "destructive"] as const
+
 props {}:{}
-div(className="flex flex-col items-center gap-6")
-  Alert
-  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Alert dialog box
+
+div(className="flex flex-col items-center gap-8")
+  div(className="flex flex-wrap items-center justify-center gap-4")
+    each variant in variants key variant
+      Alert(variant={variant}) #{variant}
+  div(className="flex flex-wrap items-center justify-center gap-4")
+    Alert(variant="default" ) Destructive alert
+    Alert(variant="default" onClick={undefined}) Click me
+  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Alert dialog box.

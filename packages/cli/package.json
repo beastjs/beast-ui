@@ -17,7 +17,7 @@
   "engines": { "node": ">=22.22.2" },
   "publishConfig": { "access": "public" },
   "scripts": {
-    "build": "bun build src/index.ts --target node --outdir dist",
+    "build": "bun ../../scripts/build-cli-icon-assets.ts && bun build src/index.ts --target node --outdir dist",
     "prepack": "bun run build && cp ../../LICENSE LICENSE"
   },
   "devDependencies": {

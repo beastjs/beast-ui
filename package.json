@@ -17,6 +17,7 @@
     "icons:build": "bun scripts/build-icons.ts --svg packages/icons/svg --out packages/icons/src/icons.ts",
     "registry:import": "bun scripts/registry-import/index.ts",
     "showcase:preview": "bun scripts/preview-gen/index.ts",
+    "showcase:pending": "bun scripts/preview-gen/pending.ts",
     "registry:dev": "bun run --cwd apps/registry dev",
     "registry:deploy": "bun run --cwd apps/registry deploy",
     "registry:preview": "bun run --cwd apps/registry preview",

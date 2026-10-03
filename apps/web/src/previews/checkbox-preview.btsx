@@ -1,6 +1,10 @@
+import { useState } from "octane";
 import Checkbox from "@beast-ui/registry/ui/checkbox";
 
 props {}:{}
+setup
+  const [checked, setChecked] = useState(true)
 div(className="flex flex-col items-center gap-6")
-  Checkbox
+  Checkbox(checked={checked} onCheckedChange={setChecked}) Are you ready for this?
+  p(role="status" className="text-sm text-muted-foreground") #{checked ? "Yes" : "No"}
   p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Checkbox input element

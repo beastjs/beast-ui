@@ -1,6 +1,7 @@
 import { Link } from "@octanejs/tanstack-router";
 import { CLI, componentTree, REGISTRY_URL } from "../lib/catalog";
 import { componentHref } from "../lib/navs";
+import ThoughtLine from "../components/ui/ThoughtLine.btsx";
 
 
 module
@@ -17,6 +18,8 @@ div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
     // div(className="flex items-center justify-center size-64 bg-surface rounded-xl border border-sidebar-border")
 
   section(aria-labelledby="intro-title")
+    ThoughtLine
+
     p(className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground") The Beast component registry
     h1#intro-title(className="max-w-2xl text-4xl font-medium leading-[1.06] tracking-[-0.04em] md:text-5xl") Your components. Your source.
     p(className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground") Accessible UI for Beast and Octane. Add the source to your project, make it your own, and build from there.

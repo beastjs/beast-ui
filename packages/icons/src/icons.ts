@@ -26,3 +26,30 @@ export const icons = {
 }
 
 export type IconName = keyof typeof icons
+
+/** Scope SVG definitions and their references to one framework useId() value. */
+export function iconMarkup(name: IconName, instanceId: string): string {
+  const body = icons[name]
+  const ids = new Map([...body.matchAll(/\sid="([^"]+)"/g)].map(([, id]) => [id, `icon-${Array.from(instanceId, c => c.codePointAt(0)!.toString(16)).join('-')}-${id}`]))
+  if (!ids.size) return body
+  const scoped = (id: string) => ids.get(id) ?? id
+  let markup = body.replace(/ (id|href|xlink:href|aria-labelledby|aria-describedby|begin|end)="([^"]*)"/g, (attribute, key: string, value: string) => {
+    if (key === 'id') return ` id="${scoped(value)}"`
+    if (key === 'href' || key === 'xlink:href') return ` ${key}="${value.startsWith('#') ? '#' + scoped(value.slice(1)) : value}"`
+    if (key.startsWith('aria-')) return ` ${key}="${value.split(/\s+/).map(scoped).join(' ')}"`
+    return ` ${key}="${value.split(';').map(part => {
+      const leading = part.match(/^\s*/)?.[0] ?? ''
+      const timing = part.trimStart()
+      // Longest first: IDs may contain dots, as may animation event names.
+      const id = [...ids.keys()].sort((a, b) => b.length - a.length).find(id => timing.startsWith(id + '.'))
+      return id ? leading + scoped(id) + timing.slice(id.length) : part
+    }).join(';')}"`
+  })
+  markup = markup.replace(/url\(\s*(['"]?)#([^\s)'"]+)\1\s*\)/g, (_, quote: string, id: string) => `url(${quote}#${scoped(id)}${quote})`)
+  // SVGO prefixes stylesheet selectors at build time; scope them at render time too.
+  return markup.replace(/<style([^>]*)>([\s\S]*?)<\/style>/g, (_, attributes: string, css: string) =>
+    `<style${attributes}>${css.replace(/#((?:\\.|[a-zA-Z0-9_-])+)/g, (match, selector: string) => {
+      const id = selector.replace(/\\(.)/g, '$1')
+      return ids.has(id) ? '#' + scoped(id).replace(/\./g, '\\.') : match
+    })}</style>`)
+}

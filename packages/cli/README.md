@@ -39,3 +39,24 @@ continues. A file with different code stops the command unless you pass
 
 See the [project README](https://github.com/beastjs/beast-ui#consuming-the-registry)
 for project requirements and configuration.
+
+## Icons
+
+```bash
+bunx @beastjs/cli icons init --dry-run
+bunx @beastjs/cli icons init
+bunx @beastjs/cli icons init --framework react
+```
+
+Requires Bun and an existing project. Creates four starter SVGs, a typed icon
+map, the selected framework's `Icon` component, and `scripts/build-icons.ts`.
+Installs SVGO as a dev dependency, adds `icons:build` and `icons:check`, and runs
+the first build. No `beast-ui.json` is needed. Use `--cwd <path>` for another
+project. Existing files and script commands are preserved; conflicts stop the
+setup before any changes. `--dry-run` shows the complete setup and conflicts.
+
+Import `{ Icon }` from `@/lib/icons` (requires the project's `@/*` alias to
+`src/*`). Save new SVGs in `src/lib/icons/svg/`, run `bun run icons:build`, and
+commit the SVGs with `icons.ts`. Put colored art in `svg/color/`. Use
+`bun run icons:check` in CI. The React template uses `useId` and includes
+`'use client'` for Next.js compatibility.

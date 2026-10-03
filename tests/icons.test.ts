@@ -8,7 +8,7 @@ import { buildIcon, buildIcons, findUnused, listIcons } from '../scripts/build-i
 import { migrateIcons, previewPage } from '../scripts/migrate-icons.ts'
 import { iconNames } from '../scripts/lib/prompt.ts'
 import { createBeastProgram } from '../scripts/preview-gen/program.ts'
-import { icons } from '../packages/icons/src/icons.ts'
+import { icons, iconMarkup } from '../packages/icons/src/icons.ts'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const svg = (attributes: string, body: string) => `<svg xmlns="http://www.w3.org/2000/svg" ${attributes}>${body}</svg>`
@@ -51,6 +51,25 @@ describe('build-icons', () => {
     expect(body).toContain('fill="none"')
     expect(body).toContain('stroke="currentColor"')
     expect(body).toContain('stroke-width="2"')
+  })
+
+  test('preserves root styles and converts their paint unless colors are kept', () => {
+    const source = svg('viewBox="0 0 24 24" fill="red" style="fill:none;stroke:#123456;stroke-width:2;opacity:0.5"', '<path d="M4 12h16"/>')
+    const body = buildIcon('styled', source)
+    expect(body).toContain('fill="none"')
+    expect(body).toContain('stroke="currentColor"')
+    expect(body).toContain('stroke-width="2"')
+    expect(body).toContain('opacity=".5"')
+    expect(buildIcon('styled', source, { keepColors: true })).toContain('#123456')
+    const animated = buildIcon('styled', source.replace('/></svg>', '><animate attributeName="opacity" values="0;1" dur="1s"/></path></svg>'))
+    expect(animated).toContain('fill="none"')
+    expect(animated).toContain('stroke="currentColor"')
+  })
+
+  test('composes normalization outside the existing root transform', () => {
+    expect(buildIcon('transformed', svg('viewBox="0 0 12 12" transform="translate(1 2)"', square))).toBe('<path d="M2 4h4v4H2z"/>')
+    const animated = buildIcon('transformed', svg('viewBox="0 0 12 12" transform="translate(1 2)"', '<circle r="2"><animate attributeName="r" values="1;2" dur="1s"/></circle>'))
+    expect(animated).toStartWith('<g transform="scale(2)"><g transform="translate(1 2)">')
   })
 
   test('draws in the text color, unless the icon keeps its colors', () => {
@@ -118,6 +137,29 @@ describe('Icon', () => {
   test('Icon.btsx compiles and typechecks', () => {
     expect(typeErrors(path.join(root, 'packages/icons/src/Icon.btsx'))).toEqual([])
   }, 30_000)
+
+  test('repeated instances scope gradients, links, CSS selectors and animation references', async () => {
+    const dir = await temp()
+    await mkdir(path.join(dir, 'svg'))
+    await writeFile(path.join(dir, 'svg/faded.svg'), svg('viewBox="0 0 24 24"', '<defs><linearGradient id="g"><stop offset="0"/></linearGradient></defs><style>#spin { opacity: .5 }</style><circle id="spin" aria-labelledby="spin" fill="url(#g)" r="2"><animate attributeName="r" values="1;2" dur="1s" begin="0;spin.end"/></circle><use href="#spin"/>'))
+    const output = path.join(dir, 'icons.ts')
+    await writeFile(output, await buildIcons(path.join(dir, 'svg'), output))
+    const generated = await import(output)
+    const first = generated.iconMarkup('faded', ':r1:')
+    const second = generated.iconMarkup('faded', ':r2:')
+    const ids = [...first.matchAll(/ id="([^"]+)"/g)].map(([, id]) => id)
+    expect(ids).toHaveLength(2)
+    for (const id of ids) expect(second).not.toContain(`id="${id}"`)
+    const gradient = ids.find(id => id.endsWith('-g'))
+    const spin = ids.find(id => id.endsWith('-spin'))
+    expect(first).toContain(`url(#${gradient})`)
+    expect(first).toContain(`href="#${spin}"`)
+    expect(first).toContain(`aria-labelledby="${spin}"`)
+    expect(first).toContain(`${spin}.end`)
+    expect(first).toContain(`#${spin}{`)
+    expect(generated.iconMarkup('faded', ':r1:')).toBe(first)
+    expect(iconMarkup('search', ':r1:')).toBe(icons.search)
+  })
 
   test('a call site cannot name an icon that does not exist', () => {
     const file = path.join(root, 'apps/web/src/components/icon-probe.btsx')
