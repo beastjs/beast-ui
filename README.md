@@ -9,6 +9,7 @@ into your project, where you own and edit it.
 bun install
 bun run dev      # serves the component showcase at http://127.0.0.1:3000
 bun run check    # typecheck + test + build
+bun run check:ci # typecheck + build (used by CI and CLI publishing)
 ```
 
 ## Layout
@@ -307,7 +308,7 @@ update `DEFAULT_REGISTRY` in `packages/cli/src/utils/config.ts`.
 
 To release, raise `version` in `packages/cli/package.json` in a PR and merge it.
 `.github/workflows/publish-cli.yml` runs on merges to `main` that change that
-file. When the version is not yet on npm, it runs `bun run check`, publishes
+file. When the version is not yet on npm, it runs `bun run check:ci`, publishes
 `@beastjs/cli` with provenance, and creates the `cli-v<version>` tag and GitHub
 release with generated notes. A version already on npm is skipped, so the
 workflow is safe to re-run from the Actions tab. It needs an Actions secret

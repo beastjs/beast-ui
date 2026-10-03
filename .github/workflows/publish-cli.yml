@@ -54,7 +54,7 @@ jobs:
 
       - name: Check
         if: steps.version.outputs.publish == 'true'
-        run: bun run check
+        run: bun run check:ci
 
       # bun pm pack builds the CLI and rewrites workspace: dependency ranges.
       - name: Pack

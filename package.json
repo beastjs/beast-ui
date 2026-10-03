@@ -30,7 +30,8 @@
     "cli": "bun packages/cli/src/index.ts",
     "typecheck": "tsc --noEmit && bun run --cwd packages/registry typecheck && bun run --cwd packages/icons typecheck && bun run --cwd apps/docs typecheck && bun run --cwd apps/web typecheck",
     "test": "bun test",
-    "check": "bun run typecheck && bun run test && bun run build"
+    "check": "bun run typecheck && bun run test && bun run build",
+    "check:ci": "bun run typecheck && bun run build"
   },
   "devDependencies": {
     "@beast-ui/registry": "workspace:*",
