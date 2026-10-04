@@ -4,27 +4,60 @@ import Checkbox from "@beast-ui/registry/ui/checkbox";
 props {}:{}
 setup
   const id = useId()
-  const [email, setEmail] = useState(true)
-  const [updates, setUpdates] = useState(false)
-  const selected = Number(email) + Number(updates)
+  const [a, setA] = useState(true)
+  const [b, setB] = useState(false)
+  const [c, setC] = useState(false)
+  const selected = Number(a) + Number(b) + Number(c)
 div.preview-stack(className="max-w-sm")
-  section.preview-section(aria-label="Notification preferences")
-    h2.preview-label Make it your own
+  section.preview-section(aria-label="Designing the builder")
+    h2.preview-label.px-3.text-lg Designing the builder
     div.preview-card(className="flex flex-col gap-5")
-      div(className="flex items-center gap-3 border-b border-sidebar-border pb-4")
-        Checkbox(id={`${id}-all`} checked={selected === 2} indeterminate={selected === 1} onCheckedChange={(checked) => { setEmail(checked); setUpdates(checked); }})
-        label(htmlFor={`${id}-all`} className="cursor-pointer text-sm font-medium") All notifications
-      div(className="flex items-start gap-3")
-        Checkbox(id={`${id}-email`} checked={email} onCheckedChange={setEmail} className="mt-0.5")
-        label(htmlFor={`${id}-email`} className="cursor-pointer")
-          span(className="block text-sm") Email notifications
-          span(className="mt-1 block text-xs text-muted-foreground") The things you need to know, in your inbox.
-      div(className="flex items-start gap-3")
-        Checkbox(id={`${id}-updates`} checked={updates} onCheckedChange={setUpdates} className="mt-0.5")
-        label(htmlFor={`${id}-updates`} className="cursor-pointer")
-          span(className="block text-sm") Product updates
-          span(className="mt-1 block text-xs text-muted-foreground") New features and a little inspiration.
-      div(className="flex items-center gap-3")
-        Checkbox(id={`${id}-required`} checked={true} disabled={true})
-        label(htmlFor={`${id}-required`} className="text-sm text-muted-foreground") Security alerts (required)
-    p.preview-note(role="status") #{`${selected} of 2 optional notifications enabled. Select one to see the mixed state.`}
+      div(className="flex flex-col justify-center gap-3")
+        Checkbox(
+          ~ id={`${id}-self-aware`}
+          ~ label="Self aware"
+          ~ checked={a}
+          ~ onChange={(checked: boolean) => {
+          ~   void setA(checked);
+          ~ }}
+          ~ boxSize={20}
+          ~ boxRadius={5}
+          ~ fontSize={16}
+          ~ bounce={0.1}
+          ~ strikeLag={0.12}
+          ~ doneOpacity={0.42}
+          ~ strike="none"
+          ~ disabled={false})
+
+        Checkbox(
+          ~ id={`${id}-examine-own-views`}
+          ~ label="Examine own views"
+          ~ checked={b}
+          ~ onChange={(checked: boolean) => {
+          ~   void setB(checked);
+          ~ }}
+          ~ boxSize={20}
+          ~ boxRadius={5}
+          ~ fontSize={16}
+          ~ bounce={0.1}
+          ~ strikeLag={0.012}
+          ~ doneOpacity={0.42}
+          ~ strike="none"
+          ~ disabled={false})
+
+        Checkbox(
+          ~ id={`${id}-never-certain`}
+          ~ label="Never certain"
+          ~ checked={c}
+          ~ onChange={(checked: boolean) => {
+          ~   void setC(checked);
+          ~ }}
+          ~ boxSize={20}
+          ~ boxRadius={5}
+          ~ fontSize={16}
+          ~ bounce={0.1}
+          ~ strikeLag={0.12}
+          ~ doneOpacity={0.42}
+          ~ strike="none"
+          ~ disabled={false})
+    p.preview-note(role="status") #{`${selected} of 3 `}
