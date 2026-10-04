@@ -61,6 +61,6 @@ export function iconMarkup(name: IconName, instanceId: string): string {
   return markup.replace(/<style([^>]*)>([\s\S]*?)<\/style>/g, (_, attributes: string, css: string) =>
     `<style${attributes}>${css.replace(/#((?:\\.|[a-zA-Z0-9_-])+)/g, (match, selector: string) => {
       const id = selector.replace(/\\(.)/g, '$1')
-      return ids.has(id) ? '#' + scoped(id).replace(/\./g, '\\.') : match
+      return ids.has(id) ? '#' + scoped(id).replace(/[^a-zA-Z0-9_-]/g, '\\$&') : match
     })}</style>`)
 }
