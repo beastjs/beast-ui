@@ -314,7 +314,17 @@ update `DEFAULT_REGISTRY` in `packages/cli/src/utils/config.ts`.
 
 ## Releasing the CLI
 
-To release, raise `version` in `packages/cli/package.json` in a PR and merge it.
+From the repo root, bump the CLI version and update `bun.lock`:
+
+```bash
+bun run cli:version        # patch (default)
+bun run cli:version minor
+bun run cli:version major
+bun run cli:version 0.4.0  # exact version
+```
+
+The command updates `packages/cli/package.json` and the lockfile without
+creating a commit or Git tag. To release, commit the changes in a PR and merge it.
 `.github/workflows/publish-cli.yml` runs on merges to `main` that change that
 file. When the version is not yet on npm, it runs `bun run check:ci`, publishes
 `@beastjs/cli` with provenance, and creates the `cli-v<version>` tag and GitHub

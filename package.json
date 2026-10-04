@@ -28,6 +28,7 @@
     "web:preview": "bun run --cwd apps/web upload-preview",
     "preview": "bun run --cwd apps/docs preview",
     "cli": "bun packages/cli/src/index.ts",
+    "cli:version": "bun scripts/bump-cli-version.ts",
     "typecheck": "tsc --noEmit && bun run --cwd packages/registry typecheck && bun run --cwd packages/icons typecheck && bun run --cwd apps/docs typecheck && bun run --cwd apps/web typecheck",
     "test": "bun test",
     "check": "bun run typecheck && bun run test && bun run build",
