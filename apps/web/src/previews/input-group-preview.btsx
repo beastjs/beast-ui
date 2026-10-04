@@ -1,0 +1,41 @@
+import { useId, useState } from "octane";
+import { Icon } from "@beast-ui/icons";
+import InputGroup, { InputGroupAddon, InputGroupButton, InputGroupText, InputGroupInput, InputGroupTextarea } from "@beast-ui/registry/ui/input-group";
+
+props {}:{}
+setup
+  const id = useId()
+  const [query, setQuery] = useState("")
+  const [draft, setDraft] = useState("")
+  const [sent, setSent] = useState("")
+div.preview-stack
+  section.preview-section(aria-label="Input addons")
+    h2.preview-label A little context around your input
+    div(className="mx-auto flex w-full max-w-sm flex-col gap-4")
+      label(className="text-xs" htmlFor={`${id}-search`}) Search your library
+      InputGroup
+        InputGroupAddon
+          Icon(name="search" size={16})
+        InputGroupInput(id={`${id}-search`} placeholder="Search files…" value={query} onInput={(event) => setQuery(event.currentTarget.value)})
+        InputGroupAddon(align="inline-end")
+          InputGroupText #{query ? `${query.length} chars` : "⌘ K"}
+      label(className="text-xs" htmlFor={`${id}-site`}) Website
+      InputGroup
+        InputGroupAddon
+          InputGroupText https://
+        InputGroupInput(id={`${id}-site`} placeholder="your-site")
+        InputGroupAddon(align="inline-end")
+          InputGroupText .com
+      InputGroup
+        InputGroupAddon
+          Icon(name="account" size={16})
+        InputGroupInput(aria-label="Unavailable account" placeholder="Account unavailable" disabled={true})
+  section.preview-section(aria-label="Message composer")
+    h2.preview-label Give your next idea some space
+    div(className="mx-auto w-full max-w-sm")
+      InputGroup(className="flex-wrap")
+        InputGroupTextarea(aria-label="Message" placeholder="Write a short message…" value={draft} onInput={(event) => setDraft(event.currentTarget.value)} rows={3})
+        InputGroupAddon(align="block-end" className="justify-between")
+          InputGroupText #{`${draft.length}/240`}
+          InputGroupButton(variant="default" size="sm" disabled={!draft.trim() || draft.length > 240} onClick={() => { setSent(draft.trim()); setDraft(""); }}) Send
+    p.preview-note(role="status") #{sent ? `Sent: ${sent}` : "Type a message, then press Send."}

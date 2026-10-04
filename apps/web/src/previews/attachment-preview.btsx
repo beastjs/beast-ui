@@ -1,0 +1,47 @@
+import { useState } from "octane";
+import { Icon } from "@beast-ui/icons";
+import Attachment, { AttachmentGroup, AttachmentMedia, AttachmentContent, AttachmentTitle, AttachmentDescription, AttachmentActions, AttachmentAction } from "@beast-ui/registry/ui/attachment";
+import Button from "@beast-ui/registry/ui/button";
+
+module
+  const states = ["idle", "uploading", "processing", "error", "done"] as const
+props {}:{}
+setup
+  const [removed, setRemoved] = useState(false)
+  const [retried, setRetried] = useState(false)
+div.preview-stack
+  section.preview-section(aria-label="Attached files")
+    h2.preview-label A few things worth keeping
+    AttachmentGroup(className="flex flex-wrap gap-3")
+      if !removed
+        Attachment(className="w-full sm:w-72")
+          AttachmentMedia
+            Icon(name="folder")
+          AttachmentContent
+            AttachmentTitle Project brief.pdf
+            AttachmentDescription 2.4 MB · Ready
+          AttachmentActions
+            AttachmentAction(aria-label="Remove project brief" onClick={() => setRemoved(true)})
+              Icon(name="close" size={14})
+      Attachment(orientation="vertical" className="w-48")
+        AttachmentMedia(variant="image" className="w-full")
+          img(src="/preview-landscape.svg" alt="Mountains beneath a warm sky")
+        AttachmentContent
+          AttachmentTitle Inspiration.svg
+          AttachmentDescription 12 KB · Image
+    if removed
+      Button(variant="ghost" size="sm" onClick={() => setRemoved(false)}) Restore attachment
+    p.preview-note(role="status") #{removed ? "Project brief removed from this demo." : "Use the remove button to try the attachment action."}
+  section.preview-section(aria-label="Attachment states")
+    h2.preview-label From upload to ready
+    div(className="grid gap-3 sm:grid-cols-2")
+      each state in states key state
+        Attachment(state={state === "error" && retried ? "done" : state} size="sm")
+          AttachmentMedia
+            Icon(name={state === "error" && !retried ? "close" : "folder"} size={16})
+          AttachmentContent
+            AttachmentTitle #{`${state}.pdf`}
+            AttachmentDescription #{state === "error" && retried ? "Upload complete" : state === "error" ? "Upload failed · Try again" : state}
+          if state === "error" && !retried
+            AttachmentActions
+              AttachmentAction(size="sm" aria-label="Retry upload" onClick={() => setRetried(true)}) Retry

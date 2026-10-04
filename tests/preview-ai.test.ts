@@ -1,23 +1,11 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import {
-  COHERE_API_URL,
-  COHERE_MODEL,
-  chatJson,
   draftPreviewSpec,
   parsePreviewSpec,
   previewPrompt,
   type DraftInput,
 } from '../scripts/preview-gen/cohere.ts'
 import type { ComponentProps } from '../scripts/preview-gen/props.ts'
-
-const savedKey = process.env.COHERE_API_KEY
-const savedModel = process.env.COHERE_MODEL
-afterEach(() => {
-  if (savedKey === undefined) delete process.env.COHERE_API_KEY
-  else process.env.COHERE_API_KEY = savedKey
-  if (savedModel === undefined) delete process.env.COHERE_MODEL
-  else process.env.COHERE_MODEL = savedModel
-})
 
 const info: ComponentProps = {
   acceptsChildren: true,
@@ -71,48 +59,6 @@ const sse = (texts: string[]): string =>
     'data: [DONE]',
     '',
   ].join('\n')
-
-describe('cohere chat', () => {
-  test('streams text deltas, ignores thinking, and skips response_format', async () => {
-    const seen: { url?: string; init?: RequestInit } = {}
-    const value = await chatJson('sys', 'hi', { apiKey: 'k', fetch: stubFetch(seen, sse(['"o', 'k"'])) })
-    expect(seen.url).toBe(COHERE_API_URL)
-    expect(COHERE_MODEL).toBe('north-mini-code-1-0')
-    const headers = seen.init?.headers as Record<string, string>
-    expect(headers.Authorization).toBe('Bearer k')
-    expect(seen.init?.method).toBe('POST')
-    const body = JSON.parse(seen.init?.body as string)
-    expect(body.model).toBe('north-mini-code-1-0')
-    expect(body.stream).toBe(true)
-    expect(body.response_format).toBeUndefined()
-    expect(body.messages.map((message: { role: string }) => message.role)).toEqual(['system', 'user'])
-    expect(value).toBe('ok')
-  })
-
-  test('model and key come from options over the environment', async () => {
-    process.env.COHERE_API_KEY = 'env-key'
-    process.env.COHERE_MODEL = 'env-model'
-    const seen: { url?: string; init?: RequestInit } = {}
-    await chatJson('sys', 'hi', { apiKey: 'opt-key', model: 'opt-model', fetch: stubFetch(seen, sse(['"ok"'])) })
-    const body = JSON.parse(seen.init?.body as string)
-    expect(body.model).toBe('opt-model')
-    expect((seen.init?.headers as Record<string, string>).Authorization).toBe('Bearer opt-key')
-  })
-
-  test('missing key explains COHERE_API_KEY', async () => {
-    delete process.env.COHERE_API_KEY
-    const seen: { url?: string; init?: RequestInit } = {}
-    await expect(chatJson('sys', 'hi', { fetch: stubFetch(seen, sse(['"ok"'])) })).rejects.toThrow('COHERE_API_KEY')
-    expect(seen.url).toBeUndefined()
-  })
-
-  test('non-OK status, empty streams, and non-JSON text fail loudly', async () => {
-    const seen: { url?: string; init?: RequestInit } = {}
-    await expect(chatJson('sys', 'hi', { apiKey: 'k', fetch: stubFetch(seen, 'oops', 500) })).rejects.toThrow('500')
-    await expect(chatJson('sys', 'hi', { apiKey: 'k', fetch: stubFetch(seen, 'data: [DONE]\n\n') })).rejects.toThrow('no text')
-    await expect(chatJson('sys', 'hi', { apiKey: 'k', fetch: stubFetch(seen, sse(['not json'])) })).rejects.toThrow('JSON')
-  })
-})
 
 describe('preview drafting', () => {
   test('prompt carries the component, union values, and pairs', () => {

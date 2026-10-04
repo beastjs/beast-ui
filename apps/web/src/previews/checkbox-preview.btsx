@@ -1,10 +1,30 @@
-import { useState } from "octane";
+import { useId, useState } from "octane";
 import Checkbox from "@beast-ui/registry/ui/checkbox";
 
 props {}:{}
 setup
-  const [checked, setChecked] = useState(true)
-div(className="flex flex-col items-center gap-6")
-  Checkbox(checked={checked} onCheckedChange={setChecked}) Are you ready for this?
-  p(role="status" className="text-sm text-muted-foreground") #{checked ? "Yes" : "No"}
-  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Checkbox input element
+  const id = useId()
+  const [email, setEmail] = useState(true)
+  const [updates, setUpdates] = useState(false)
+  const selected = Number(email) + Number(updates)
+div.preview-stack(className="max-w-sm")
+  section.preview-section(aria-label="Notification preferences")
+    h2.preview-label Make it your own
+    div.preview-card(className="flex flex-col gap-5")
+      div(className="flex items-center gap-3 border-b border-sidebar-border pb-4")
+        Checkbox(id={`${id}-all`} checked={selected === 2} indeterminate={selected === 1} onCheckedChange={(checked) => { setEmail(checked); setUpdates(checked); }})
+        label(htmlFor={`${id}-all`} className="cursor-pointer text-sm font-medium") All notifications
+      div(className="flex items-start gap-3")
+        Checkbox(id={`${id}-email`} checked={email} onCheckedChange={setEmail} className="mt-0.5")
+        label(htmlFor={`${id}-email`} className="cursor-pointer")
+          span(className="block text-sm") Email notifications
+          span(className="mt-1 block text-xs text-muted-foreground") The things you need to know, in your inbox.
+      div(className="flex items-start gap-3")
+        Checkbox(id={`${id}-updates`} checked={updates} onCheckedChange={setUpdates} className="mt-0.5")
+        label(htmlFor={`${id}-updates`} className="cursor-pointer")
+          span(className="block text-sm") Product updates
+          span(className="mt-1 block text-xs text-muted-foreground") New features and a little inspiration.
+      div(className="flex items-center gap-3")
+        Checkbox(id={`${id}-required`} checked={true} disabled={true})
+        label(htmlFor={`${id}-required`} className="text-sm text-muted-foreground") Security alerts (required)
+    p.preview-note(role="status") #{`${selected} of 2 optional notifications enabled. Select one to see the mixed state.`}

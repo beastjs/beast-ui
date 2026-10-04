@@ -1,14 +1,22 @@
+import { useState } from "octane";
 import ButtonRipple from "@beast-ui/registry/ui/button-ripple";
 
 module
   const variants = ["default", "secondary", "outline", "ghost"] as const
 
 props {}:{}
-div(className="flex flex-col items-center gap-6")
-  div(className="flex flex-wrap items-center justify-center gap-4")
-    each variant in variants key variant
-      ButtonRipple(variant={variant} size="lg") #{variant}
-  div(className="flex flex-wrap items-center justify-center gap-4")
-    ButtonRipple(variant="outline" size="lg" rippleColor="var(--primary)" rippleOpacity={0.35} rippleDuration={900}) Slow, tinted ripple
-    ButtonRipple(variant="outline" size="lg" disabled={true}) Disabled
-  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Let it rip ... ple.
+setup
+  const [count, setCount] = useState(0)
+div.preview-stack
+  section.preview-section(aria-label="Ripple button variants")
+    h2.preview-label Ripples from your pointer
+    div(className="preview-row py-4")
+      each variant in variants key variant
+        ButtonRipple(variant={variant} size="lg" onClick={() => setCount(count + 1)}) #{variant}
+  section.preview-section(aria-label="Custom ripples")
+    h2.preview-label Color & timing
+    div.preview-row
+      ButtonRipple(variant="outline" size="lg" rippleColor="#8b5cf6" rippleOpacity={0.3} rippleDuration={900} onClick={() => setCount(count + 1)}) Slow violet
+      ButtonRipple(variant="outline" size="lg" rippleColor="#10b981" rippleOpacity={0.4} rippleDuration={250} onClick={() => setCount(count + 1)}) Quick emerald
+      ButtonRipple(variant="outline" size="lg" disabled={true}) Disabled
+    p.preview-note(role="status") #{count === 0 ? "Click near an edge to see the ripple follow your pointer. Try Enter or Space, too." : `${count} ${count === 1 ? "ripple" : "ripples"} released.`}

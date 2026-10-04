@@ -1,6 +1,26 @@
+import { useState } from "octane";
 import AspectRatio from "@beast-ui/registry/ui/aspect-ratio";
+import Button from "@beast-ui/registry/ui/button";
+
+module
+  const ratios = [
+    { label: "16:9", value: 16 / 9, name: "Landscape" },
+    { label: "1:1", value: 1, name: "Square" },
+    { label: "4:5", value: 4 / 5, name: "Portrait" },
+  ] as const
 
 props {}:{}
-div(className="flex flex-col items-center gap-6")
-  AspectRatio
-  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Aspect Ratio for image files
+setup
+  const [selected, setSelected] = useState("16:9")
+  const current = ratios.find((ratio) => ratio.label === selected) ?? ratios[0]
+div.preview-stack
+  section.preview-section(aria-label="Choose an aspect ratio")
+    div(className="flex flex-wrap items-center justify-between gap-3")
+      h2.preview-label One image, three frames
+      div(className="flex gap-1")
+        each ratio in ratios key ratio.label
+          Button(size="xs" variant={selected === ratio.label ? "secondary" : "ghost"} aria-pressed={selected === ratio.label} onClick={() => setSelected(ratio.label)}) #{ratio.label}
+    div(className="mx-auto w-full max-w-80")
+      AspectRatio(ratio={current.value} className="overflow-hidden rounded-2xl bg-muted")
+        img(src="/preview-landscape.svg" alt="Geometric mountain landscape with a golden sun" className="absolute inset-0 h-full w-full object-cover")
+    p.preview-note(role="status") #{`${current.name} · ${current.label}. The image fills the frame while keeping its proportions.`}

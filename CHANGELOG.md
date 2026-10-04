@@ -6,6 +6,8 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Added
 
+- `@beastjs/cli@0.3.2 table init`: a standalone spreadsheet viewer extracted from LiveSnaps, with workbook tabs, table controls, parsers, 30 icons, scoped styles, runtime-compatible adapters, conflict preflight, and dry-run support.
+
 - `bun run showcase:preview`: an interactive generator for showcase previews.
   It reads a component's props with the TypeScript checker, including cva
   variants and props inherited from a base component. It then builds the
@@ -60,6 +62,10 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Changed
 
+- All 12 showcase previews now include complete examples, labeled variants and
+  useful interaction feedback. Drawer and popover previews include working
+  triggers and panels; image, chat, form and motion examples demonstrate real
+  content. The shared preview frame adapts to its content and smaller screens.
 - The CLI publishes itself: merging a version bump in
   `packages/cli/package.json` to `main` publishes it to npm and creates the
   `cli-v<version>` tag and release. Tags are no longer pushed by hand.

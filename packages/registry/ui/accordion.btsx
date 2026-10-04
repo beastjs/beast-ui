@@ -1,0 +1,39 @@
+import { Accordion as AccordionPrimitive } from "@octanejs/base-ui/accordion";
+import { cn } from "cn";
+module
+  export { AccordionItem, AccordionTrigger, AccordionContent };
+component AccordionItem
+  props { className, ...props }: AccordionPrimitive.Item.Props
+  AccordionPrimitive.Item(
+    ~ data-slot="accordion-item"
+    ~ className={cn("cn-accordion-item", className)}
+    ~ {...props}
+    ~ )
+component AccordionTrigger
+  props { className, children, ...props }: AccordionPrimitive.Trigger.Props
+  AccordionPrimitive.Header(className="flex")
+    AccordionPrimitive.Trigger(
+      ~ data-slot="accordion-trigger"
+      ~ className={cn("cn-accordion-trigger group/accordion-trigger relative flex flex-1 items-start justify-between border border-transparent transition-all outline-none aria-disabled:pointer-events-none aria-disabled:opacity-50", className)}
+      ~ {...props}
+      ~ )
+      | #{children}
+      svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="cn-accordion-trigger-icon pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden" data-slot="accordion-trigger-icon")
+        path(d="m6 9 6 6 6-6")
+      svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="cn-accordion-trigger-icon pointer-events-none hidden shrink-0 group-aria-expanded/accordion-trigger:inline" data-slot="accordion-trigger-icon")
+        path(d="m6 15 6-6 6 6")
+component AccordionContent
+  props { className, children, ...props }: AccordionPrimitive.Panel.Props
+  AccordionPrimitive.Panel(
+    ~ data-slot="accordion-content"
+    ~ className="cn-accordion-content overflow-hidden"
+    ~ {...props}
+    ~ )
+    div(className={cn("cn-accordion-content-inner h-(--accordion-panel-height) data-ending-style:h-0 data-starting-style:h-0 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4", className)}) #{children}
+
+props { className, ...props }: AccordionPrimitive.Root.Props
+AccordionPrimitive.Root(
+  ~ data-slot="accordion"
+  ~ className={cn("cn-accordion flex w-full flex-col", className)}
+  ~ {...props}
+  ~ )

@@ -12,13 +12,21 @@ bun run check    # typecheck + test + build
 bun run check:ci # typecheck + build (used by CI and CLI publishing)
 ```
 
+## Spreadsheet viewer
+
+```bash
+bunx @beastjs/cli@0.3.2 table init
+```
+
+Copies a standalone spreadsheet viewer with table controls, local parsers, typed icons, and styles into a Beast + Octane project. See [docs/table.md](docs/table.md) for setup, options, supported toolchains, and limits.
+
 ## Layout
 
 | Path | Purpose |
 | --- | --- |
 | `registry.json` | The catalog: one entry per item, with its files, npm dependencies, and registry dependencies. |
 | `packages/registry/` | The component sources themselves (`ui/`, `lib/`, `styles/`) plus the shared Zod schema and path helpers. |
-| `packages/cli/` | The `beast-ui` CLI: `init`, `list`, `add`. |
+| `packages/cli/` | The `beast-ui` CLI: `init`, `list`, `add`, `icons init`, `table init`. |
 | `apps/web/` | The component showcase: live previews of every registry component, built with Rsbuild. |
 | `apps/docs/` | The docs site, to become the markdown documentation. In development it also serves the built registry at `/r/*.json`. |
 | `apps/registry/` | The Cloudflare Worker that serves the registry in production. |

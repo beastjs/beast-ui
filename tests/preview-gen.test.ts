@@ -1,3 +1,5 @@
+import ts from 'typescript'
+import { createBeastProgram } from '../scripts/preview-gen/program.ts'
 import { describe, expect, test } from 'bun:test'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -82,6 +84,16 @@ describe('preview composition', () => {
 
 describe('showcase previews', () => {
   // The web typecheck does not read .btsx files, so this is what type-checks the previews.
+  test('new compound components compile and typecheck their render wrappers', () => {
+    const files = ['accordion', 'alert-dialog', 'attachment', 'combobox', 'input-group', 'message-scroller'].map(name => path.join(root, 'packages/registry/ui', `${name}.btsx`))
+    const { program, sourceFile } = createBeastProgram(root, files)
+    for (const file of files) {
+      const source = sourceFile(file)!
+      const problems = [...program.getSyntacticDiagnostics(source), ...program.getSemanticDiagnostics(source)].map(diagnostic => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'))
+      expect({ file: path.basename(file), problems }).toEqual({ file: path.basename(file), problems: [] })
+    }
+  }, SLOW)
+
   test('every hand-written preview compiles and typechecks', async () => {
     for (const item of (await readRegistry(root)).items.filter((entry) => entry.type === 'registry:ui')) {
       const source = await readFile(path.join(root, paths.preview(item.name)), 'utf8')

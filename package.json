@@ -41,7 +41,8 @@
     "beast-tsrx": "0.3.2",
     "octane": "0.4.3",
     "svgo": "^4.1.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "xlsx": "0.18.5"
   },
   "dependencies": {
     "@octanejs/motion": "^0.1.54",

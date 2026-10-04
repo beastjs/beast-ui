@@ -1,0 +1,34 @@
+import Accordion, { AccordionItem, AccordionTrigger, AccordionContent } from "@beast-ui/registry/ui/accordion";
+
+props {}:{}
+div.preview-stack
+  section.preview-section(aria-label="Project questions")
+    h2.preview-label A little clarity, one question at a time
+    Accordion(defaultValue={["source"]} className="showcase-accordion")
+      AccordionItem(value="source")
+        AccordionTrigger Do I own the source?
+        AccordionContent
+          p Yes. Components are copied into your project, ready for you to change and make your own.
+      AccordionItem(value="themes")
+        AccordionTrigger Can I change the theme?
+        AccordionContent
+          p Use your own colors, spacing, and typography. The components follow your theme tokens.
+      AccordionItem(value="keyboard")
+        AccordionTrigger Does it work with a keyboard?
+        AccordionContent
+          p Use the arrow keys to move between questions, then Enter or Space to open a panel.
+  section.preview-section(aria-label="Multiple panels")
+    h2.preview-label Keep more than one thought open
+    Accordion(multiple={true} defaultValue={["design", "build"]} className="showcase-accordion")
+      AccordionItem(value="design")
+        AccordionTrigger Design
+        AccordionContent
+          p Start with a useful idea and give it room to grow.
+      AccordionItem(value="build")
+        AccordionTrigger Build
+        AccordionContent
+          p Turn the idea into a small working prototype.
+      AccordionItem(value="locked" disabled={true})
+        AccordionTrigger Publish · coming soon
+        AccordionContent This step is not available yet.
+  p.preview-note Try opening a panel, or explore the triggers with your keyboard.

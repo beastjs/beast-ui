@@ -5,11 +5,20 @@ import CallChip from "@beast-ui/registry/ui/call-chip";
 props {}:{}
 setup
   const [status, setStatus] = useState<"idle" | "running" | "done" | "error">("idle")
-div(className="flex flex-col items-center gap-6")
-  CallChip(name="Search" argument="components" icon="search" status={status} onRetry={() => setStatus("running")})
-  div(className="flex flex-wrap justify-center gap-3")
-    Button(size="sm" onClick={() => setStatus("running")} disabled={status === "running"}) Start
-    Button(size="sm" variant="outline" onClick={() => setStatus("done")} disabled={status !== "running"}) Complete
-    Button(size="sm" variant="outline" onClick={() => setStatus("error")} disabled={status !== "running"}) Fail
-    Button(size="sm" variant="ghost" onClick={() => setStatus("idle")}) Reset
-  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Start the example, then complete or fail it. Click a failed chip, or focus it and press Enter or Space, to retry.
+div.preview-stack
+  section.preview-section(aria-label="Interactive tool call")
+    h2.preview-label Follow a tool call
+    div(className="preview-row min-h-20")
+      CallChip(name="Search" argument="components" icon="search" status={status} expectedMs={3000} onRetry={() => setStatus("running")})
+    div(className="preview-row gap-2")
+      Button(size="sm" onClick={() => setStatus("running")} disabled={status !== "idle"}) Start
+      Button(size="sm" variant="outline" onClick={() => setStatus("done")} disabled={status !== "running"}) Complete
+      Button(size="sm" variant="outline" onClick={() => setStatus("error")} disabled={status !== "running"}) Fail
+      Button(size="sm" variant="ghost" onClick={() => setStatus("idle")} disabled={status === "idle"}) Reset
+    p.preview-note(role="status") #{status === "idle" ? "Start a call to watch its progress and elapsed time." : status === "running" ? "Running. Choose Complete or Fail to finish the call." : status === "done" ? "Complete. Reset to run it again." : "Failed. Click the chip, or press Enter or Space, to retry."}
+  section.preview-section(aria-label="Tool icons and states")
+    h2.preview-label Different tools, familiar states
+    div.preview-row
+      CallChip(name="Read" argument="theme.css" icon="file" status="idle" showTimer={false} size={28})
+      CallChip(name="Edit" argument="button.btsx" icon="edit" status="done" showTimer={false} size={28})
+      CallChip(name="Run" argument="bun test" icon="terminal" status="error" showTimer={false} size={28})

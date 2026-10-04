@@ -4,6 +4,7 @@ import { Command, Option } from 'commander'
 import type { Config } from '@beast-ui/registry/schema'
 import packageJson from '../package.json' with { type: 'json' }
 import { initIcons, type IconsInitOptions } from './commands/icons.ts'
+import { initTable, type TableInitOptions } from './commands/table.ts'
 import { addComponents } from './commands/add.ts'
 import { DEFAULT_REGISTRY, findConfig, initConfig } from './utils/config.ts'
 import { fetchCatalog } from './utils/registry.ts'
@@ -32,6 +33,17 @@ iconsCommand.command('init')
   .addOption(new Option('--framework <name>', 'Component framework').choices(['beast', 'react']).default('beast'))
   .option('--dry-run', 'Show all files, scripts, dependencies, commands, and conflicts without changing anything')
   .action(async (options: IconsInitOptions) => { await initIcons(options) })
+
+const tableCommand = program.command('table').description('Install a standalone spreadsheet table viewer')
+tableCommand.command('init')
+  .description('Copy the viewer, table controls, parsers, icons, and scoped styles')
+  .option('-c, --cwd <path>', 'Target Beast project directory', '.')
+  .option('--path <path>', 'Isolated source directory', 'src/components/table')
+  .option('--css <path>', 'Tailwind v4 entry stylesheet (detected by default)')
+  .addOption(new Option('--package-manager <name>', 'Package manager (detected from lockfile)').choices(['bun', 'npm', 'pnpm', 'yarn']))
+  .option('--dry-run', 'Show files, dependencies, and conflicts without changing anything')
+  .option('--skip-install', 'Copy source and wire styles without installing dependencies')
+  .action(async (options: TableInitOptions) => { await initTable(options) })
 
 program.command('init')
   .description('Create beast-ui.json in an existing Beast project')
@@ -78,7 +90,14 @@ program.command('add')
   .option('--dry-run', 'Show files and dependencies without writing or installing')
   .option('--overwrite', 'Replace existing files that differ from the registry')
   .option('--skip-install', 'Copy source files without installing npm dependencies')
-  .action(async (names: string[], options: AddCommandOptions) => { await addComponents(names, { ...options, cwd: path.resolve(options.cwd) }) })
+  .action(async (names: string[], options: AddCommandOptions) => {
+    if (names.includes('table')) {
+      if (names.length !== 1) throw new Error('Install the standalone table separately: beast-ui table init (or beast-ui add table).')
+      await initTable({ cwd: options.cwd, dryRun: options.dryRun, skipInstall: options.skipInstall })
+      return
+    }
+    await addComponents(names, { ...options, cwd: path.resolve(options.cwd) })
+  })
 
 try {
   await program.parseAsync()

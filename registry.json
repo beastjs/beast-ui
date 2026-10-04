@@ -234,6 +234,123 @@
           "type": "registry:ui"
         }
       ]
+    },
+    {
+      "name": "accordion",
+      "type": "registry:ui",
+      "title": "Accordion",
+      "description": "an accordion",
+      "dependencies": [
+        "@octanejs/base-ui@0.1.55",
+        "cn@^0.4.0"
+      ],
+      "registryDependencies": [
+        "theme"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/accordion.btsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "alert-dialog",
+      "type": "registry:ui",
+      "title": "Alert Dialog",
+      "description": "alert dialog modal",
+      "dependencies": [
+        "@octanejs/base-ui@0.1.55",
+        "cn@^0.4.0"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/alert-dialog.btsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": [
+        "button"
+      ]
+    },
+    {
+      "name": "attachment",
+      "type": "registry:ui",
+      "title": "Attachment",
+      "description": "file attachment",
+      "dependencies": [
+        "@octanejs/base-ui@0.1.55",
+        "class-variance-authority@^0.7.1",
+        "cn@^0.4.0"
+      ],
+      "registryDependencies": [
+        "theme",
+        "button"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/attachment.btsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "combobox",
+      "type": "registry:ui",
+      "title": "Combobox",
+      "description": "combo box or list box",
+      "dependencies": [
+        "@octanejs/base-ui@0.1.55",
+        "cn@^0.4.0"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/combobox.btsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": [
+        "button",
+        "input-group"
+      ]
+    },
+    {
+      "name": "input-group",
+      "type": "registry:ui",
+      "title": "Input Group",
+      "description": "input group component",
+      "dependencies": [
+        "class-variance-authority@^0.7.1",
+        "cn@^0.4.0"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/input-group.btsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": [
+        "button"
+      ]
+    },
+    {
+      "name": "message-scroller",
+      "type": "registry:ui",
+      "title": "Message Scroller",
+      "description": "floating button for scrolling",
+      "dependencies": [
+        "cn@^0.4.0"
+      ],
+      "registryDependencies": [
+        "theme",
+        "button"
+      ],
+      "files": [
+        {
+          "path": "packages/registry/ui/message-scroller.btsx",
+          "type": "registry:ui"
+        }
+      ]
     }
   ]
 }

@@ -23,14 +23,17 @@ div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
               Link(to={componentHref(base.name)} className="underline underline-offset-4") #{base.title}
           h1(className="mt-3 text-3xl font-medium tracking-tight") #{component.title}
         // a(href={itemUrl(component.name)} className="text-sm text-muted-foreground underline underline-offset-4" target="_blank" rel="noopener noreferrer") View source JSON ↗
-      // p(className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground") #{component.description}
-      Pad
-      // section(className="mt-8 flex min-h-56 items-center justify-center rounded-xl border border-border/40 bg-muted/30 p-8" aria-label={`${component.title} preview`})
+      p(className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground") #{component.description}
+      Pad(label={`${component.title} preview`})
         if Preview
-          Suspense(fallback={null})
+          Suspense(fallback="Loading preview…")
             Preview
         else
           p(className="text-sm text-muted-foreground") No preview yet.
+      section(className="relative -mt-4 px-2" aria-label="Install component")
+        pre(className="relative flex h-20 items-center overflow-x-auto rounded-b-3xl bg-linear-to-r from-muted/0 via-muted/20 to-muted/0 px-6 font-mono text-xs")
+          div(className="infinite-lines pointer-events-none absolute top-0 left-0 h-16 w-full")
+          code.code(className="relative mt-4 text-mist-600 dark:text-taupe-300/80") #{addCommand(component.name)}
       if variants.length > 0
         section(className="mt-10" aria-labelledby="variants-title")
           h2#variants-title(className="text-lg font-medium tracking-tight") Variants
@@ -40,10 +43,7 @@ div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
               Link(to={componentHref(variant.name)} className="rounded-xl border border-border/40 p-4 transition-colors hover:bg-muted/60")
                 h3(className="text-sm font-medium") #{variant.title}
                 p(className="mt-1.5 text-sm leading-relaxed text-muted-foreground") #{variant.description}
-      section(className="-mt-4 relative px-2 z-6" aria-labelledby="install-title")
-        pre(className="relative flex items-center overflow-x-auto rounded-b-3xl bg-linear-to-r from-muted/0 via-muted/20 to-muted/0 h-20 px-6 font-mono text-xs overflow-hidden")
-          div(className="z-4 absolute h-16 w-full infinite-lines pointer-events-none top-0 left-0")
-          code.code(className="relative mt-4 z-6 text-mist-600 dark:text-taupe-300/80") #{addCommand(component.name)}
+      section(className="mt-6 px-2" aria-label="Component dependencies")
         if component.registryDependencies.length > 0
           fragment
             h3(className="mt-5 text-sm font-medium") Also installs
@@ -53,7 +53,7 @@ div(className="mx-auto max-w-4xl px-5 py-10 md:px-10 md:py-14")
                   code(className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs") #{dependency}
         if component.dependencies.length > 0
           fragment
-            h2#install-title(className="text-lg font-medium tracking-tight") Deps
+            h3(className="mt-5 text-sm font-medium") Dependencies
             // (className="mt-2 flex flex-wrap gap-1.5")
 
             ul(className="relative mt-3 overflow-x-auto _rounded-xl bg-linear-to-r from-muted/0 via-muted/20 to-muted/0 p-5 font-mono text-xs leading-7")

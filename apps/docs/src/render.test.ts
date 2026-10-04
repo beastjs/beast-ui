@@ -69,6 +69,85 @@ async function mount(specifier: string, props?: Record<string, unknown>): Promis
 }
 
 describe('rendered components', () => {
+  test('new previews render compound components and preserve their interactions', async () => {
+    const { flushSync } = await dom.runner.import<OctaneRuntime>('virtual:octane-runtime')
+    const preview = (name: string) => fileURLToPath(new URL(`../../web/src/previews/${name}-preview.btsx`, import.meta.url))
+    const button = (container: HTMLElement, text: string) => Array.from(container.querySelectorAll('button')).find(node => node.textContent?.trim() === text)!
+    const settle = () => new Promise(resolve => setTimeout(resolve, 0))
+    const accordion = await mount(preview('accordion'))
+    expect(accordion.textContent).toContain('Yes. Components are copied')
+    flushSync(() => button(accordion, 'Can I change the theme?').click())
+    expect(button(accordion, 'Can I change the theme?').getAttribute('aria-expanded')).toBe('true')
+    expect(button(accordion, 'Do I own the source?').getAttribute('aria-expanded')).toBe('false')
+
+    const dialog = await mount(preview('alert-dialog'))
+    flushSync(() => button(dialog, 'Archive project').click())
+    await settle()
+    const cancel = Array.from(document.querySelectorAll('button')).find(node => node.textContent?.trim() === 'Keep project')!
+    expect(cancel).toBeDefined()
+    flushSync(() => cancel.click())
+    await settle()
+    expect(button(dialog, 'Archive project').getAttribute('aria-expanded')).toBe('false')
+    expect(dialog.textContent).toContain('Your project is still active.')
+
+    const attachment = await mount(preview('attachment'))
+    flushSync(() => attachment.querySelector<HTMLButtonElement>('[aria-label="Remove project brief"]')!.click())
+    expect(attachment.textContent).toContain('Project brief removed')
+    flushSync(() => attachment.querySelector<HTMLButtonElement>('[aria-label="Retry upload"]')!.click())
+    expect(attachment.textContent).toContain('Upload complete')
+
+    const inputGroup = await mount(preview('input-group'))
+    const textarea = inputGroup.querySelector('textarea')!
+    flushSync(() => {
+      textarea.value = 'A useful next idea'
+      textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(button(inputGroup, 'Send').disabled).toBe(false)
+    flushSync(() => button(inputGroup, 'Send').click())
+    expect(inputGroup.textContent).toContain('Sent: A useful next idea')
+    expect(textarea.value).toBe('')
+
+    const combobox = await mount(preview('combobox'))
+    const picker = combobox.querySelector<HTMLInputElement>('input[role="combobox"]')!
+    expect(picker.id).not.toBe('')
+    flushSync(() => combobox.querySelector<HTMLButtonElement>('[aria-label="Show options"]')!.click())
+    await settle()
+    const option = Array.from(document.querySelectorAll<HTMLElement>('[role="option"]')).find(node => node.textContent?.trim() === 'Octane')!
+    expect(option).toBeDefined()
+    flushSync(() => option.click())
+    await settle()
+    expect(combobox.textContent).toContain('Selected: Octane')
+    flushSync(() => combobox.querySelector<HTMLButtonElement>('[aria-label="Clear selection"]')!.click())
+    expect(combobox.textContent).toContain('Type to filter')
+  }, 60_000)
+
+  test('message scroller follows the bottom and preserves a reader’s position above it', async () => {
+    const { flushSync } = await dom.runner.import<OctaneRuntime>('virtual:octane-runtime')
+    const container = await mount(fileURLToPath(new URL('../../web/src/previews/message-scroller-preview.btsx', import.meta.url)))
+    const viewport = container.querySelector<HTMLDivElement>('[data-slot="message-scroller-viewport"]')!
+    const button = (text: string) => Array.from(container.querySelectorAll('button')).find(node => node.textContent?.trim() === text)!
+    // Happy DOM has no layout. Supply a viewport whose height grows with its messages.
+    Object.defineProperty(viewport, 'clientHeight', { get: () => 200 })
+    Object.defineProperty(viewport, 'scrollHeight', { get: () => viewport.querySelectorAll('[data-message-id]').length * 60 })
+    viewport.scrollTo = ((options: ScrollToOptions) => {
+      viewport.scrollTop = Math.max(0, Math.min(options.top ?? 0, viewport.scrollHeight - viewport.clientHeight))
+      viewport.dispatchEvent(new Event('scroll'))
+    }) as typeof viewport.scrollTo
+    flushSync(() => viewport.dispatchEvent(new Event('scroll')))
+    flushSync(() => button('Add message').click())
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(viewport.scrollTop).toBe(0)
+    expect(container.querySelectorAll('[data-message-id]')).toHaveLength(9)
+    flushSync(() => button('Latest message').click())
+    expect(viewport.scrollTop).toBe(340)
+    flushSync(() => button('Add message').click())
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(viewport.scrollTop).toBeGreaterThanOrEqual(400)
+    flushSync(() => button('First message').click())
+    expect(viewport.scrollTop).toBe(0)
+    expect(container.querySelector('[data-direction="end"]')?.getAttribute('data-active')).toBe('true')
+  }, 30_000)
+
   test('motion components render with defaults and explicit props', async () => {
     const field = (await mount('@beast-ui/registry/ui/scrubfield')).innerHTML
     expect(field).toContain('role="spinbutton"')

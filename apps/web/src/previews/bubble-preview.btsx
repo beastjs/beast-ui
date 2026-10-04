@@ -1,6 +1,29 @@
-import Bubble from "@beast-ui/registry/ui/bubble";
+import { useState } from "octane";
+import Bubble, { BubbleGroup, BubbleContent, BubbleReactions } from "@beast-ui/registry/ui/bubble";
+
+module
+  const variants = ["default", "secondary", "muted", "tinted", "outline", "ghost", "destructive"] as const
 
 props {}:{}
-div(className="flex flex-col items-center gap-6")
-  Bubble
-  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Bubble
+setup
+  const [liked, setLiked] = useState(false)
+div.preview-stack
+  section.preview-section(aria-label="Conversation example")
+    h2.preview-label A conversation, with a little warmth
+    BubbleGroup(className="mx-auto w-full max-w-sm pb-3")
+      p.preview-caption Today, 10:24
+      Bubble(variant="secondary")
+        BubbleContent Hey! How are the new components coming along?
+      Bubble(align="end")
+        BubbleContent Ready for you to try. Even the little details feel good.
+        BubbleReactions
+          button(type="button" aria-label="Like this message" aria-pressed={liked} className="rounded-full px-1 outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => setLiked(!liked)}) #{liked ? "♥ 2" : "♡ 1"}
+      Bubble(variant="secondary")
+        BubbleContent It’s the little details that make it. ✨
+  section.preview-section(aria-label="Bubble variants")
+    h2.preview-label Seven tones
+    div(className="flex flex-wrap justify-center gap-2")
+      each variant in variants key variant
+        Bubble(variant={variant} className="max-w-full")
+          BubbleContent(className="px-3 py-2 text-xs") #{variant}
+    p.preview-note Tap the reaction to leave a little appreciation.

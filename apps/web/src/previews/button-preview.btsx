@@ -1,19 +1,43 @@
 import { useState } from "octane";
+import { Icon } from "@beast-ui/icons";
 import Button from "@beast-ui/registry/ui/button";
 
 module
-  const variants = ["default", "secondary", "outline", "ghost", "destructive", "link"] as const
+  const variants = [
+    { value: "default", label: "Save changes" },
+    { value: "secondary", label: "Duplicate" },
+    { value: "outline", label: "Cancel" },
+    { value: "ghost", label: "Preview" },
+    { value: "destructive", label: "Delete" },
+    { value: "link", label: "Learn more" },
+  ] as const
   const sizes = ["xs", "sm", "default", "lg"] as const
+  const iconSizes = ["icon-xs", "icon-sm", "icon", "icon-lg"] as const
 
 props {}:{}
 setup
-  const [count, setCount] = useState(0)
-div(className="flex flex-col items-center gap-8")
-  div(className="flex flex-wrap items-center justify-center gap-4")
-    each variant in variants key variant
-      Button(variant={variant} onClick={() => setCount(count + 1)}) #{variant}
-  div(className="flex flex-wrap items-center justify-center gap-4")
-    each size in sizes key size
-      Button(variant="outline" size={size}) #{size}
-    Button(variant="outline" disabled={true}) Disabled
-  p(role="status" className="text-sm text-muted-foreground") #{count === 0 ? "Try a button to check the interaction." : `Button clicked ${count} ${count === 1 ? "time" : "times"}.`}
+  const [lastAction, setLastAction] = useState("Choose a button to try it.")
+div.preview-stack
+  section.preview-section(aria-label="Button variants")
+    h2.preview-label Variants
+    div.preview-row
+      each variant in variants key variant.value
+        div(className="flex flex-col items-center gap-2")
+          Button(variant={variant.value} onClick={() => setLastAction(`${variant.label} clicked.`)}) #{variant.label}
+          code.preview-caption #{variant.value}
+  section.preview-section(aria-label="Button sizes")
+    h2.preview-label Sizes & icon buttons
+    div.preview-row
+      each size in sizes key size
+        Button(variant="outline" size={size} onClick={() => setLastAction(`${size} button clicked.`)}) #{size}
+      each size in iconSizes key size
+        Button(variant="outline" size={size} aria-label={`Search (${size})`} onClick={() => setLastAction(`${size} search clicked.`)})
+          Icon(name="search")
+  section.preview-section(aria-label="Button states")
+    h2.preview-label With an icon & disabled
+    div.preview-row
+      Button(onClick={() => setLastAction("New folder created.")})
+        Icon(name="new-folder")
+        | New folder
+      Button(variant="outline" disabled={true}) Unavailable
+    p.preview-note(role="status") #{lastAction}

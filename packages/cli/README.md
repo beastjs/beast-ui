@@ -60,3 +60,34 @@ Import `{ Icon }` from `@/lib/icons` (requires the project's `@/*` alias to
 commit the SVGs with `icons.ts`. Put colored art in `svg/color/`. Use
 `bun run icons:check` in CI. The React template uses `useId` and includes
 `'use client'` for Next.js compatibility.
+
+## Table
+
+```bash
+bunx @beastjs/cli@0.3.2 table init
+bunx @beastjs/cli@0.3.2 table init --dry-run
+# Equivalent shortcut, installed separately from registry components:
+bunx @beastjs/cli@0.3.2 add table
+```
+
+Requires an existing Beast + Octane project and Tailwind CSS v4. Copies the
+standalone spreadsheet viewer, table controls, local parser, 30 typed icons,
+and its namespaced palette into `src/components/table`. Imports the styles
+into the Tailwind entry and installs compatible adapters without replacing
+Octane. No aliases, shared UI, or `beast-ui.json` are needed. Different existing
+files stop setup before installation or writes; unchanged files are kept.
+
+Render from `src/App.btsx`:
+
+```btsx
+import Table from './components/table/table.btsx'
+
+Table
+```
+
+Use `--cwd` for another project, `--path` to choose a source directory,
+`--css` to select the Tailwind entry, `--package-manager` to override lockfile
+detection, or `--skip-install` to defer npm dependencies. Octane 0.2.x,
+0.3.x, 0.4.x, and 0.8.x have pinned adapter profiles. See the
+[table guide](https://github.com/beastjs/beast-ui/blob/main/docs/table.md)
+for file formats, URL behavior, limits, and maintenance.

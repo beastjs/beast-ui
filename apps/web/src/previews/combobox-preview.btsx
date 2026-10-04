@@ -1,0 +1,26 @@
+import { createElement, useId, useState } from "octane";
+import Combobox, { ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem, ComboboxEmpty } from "@beast-ui/registry/ui/combobox";
+
+module
+  const tools = ["Beast", "Octane", "TypeScript", "Tailwind CSS", "Bun", "Vite"]
+props {}:{}
+setup
+  const id = useId()
+  const [value, setValue] = useState<string | null>(null)
+div.preview-stack
+  section.preview-section(aria-label="Searchable tool picker")
+    h2.preview-label Find the right tool for the job
+    div(className="mx-auto w-full max-w-xs")
+      label(htmlFor={`${id}-tool`} className="mb-2 block text-xs") Choose a tool
+      Combobox(items={tools} value={value} onValueChange={setValue})
+        ComboboxInput(aria-label="Choose a tool" id={`${id}-tool`} placeholder="Search tools…" showClear={true})
+        ComboboxContent(className="showcase-combobox")
+          ComboboxEmpty No tools found. Try another search.
+          ComboboxList
+            | #{(tool: string) => createElement(ComboboxItem, { key: tool, value: tool, children: tool })}
+    p.preview-note(role="status") #{value ? `Selected: ${value}` : "Type to filter, then choose a tool. Arrow keys and Enter work too."}
+  section.preview-section(aria-label="Disabled tool picker")
+    h2.preview-label A choice that can wait
+    div(className="mx-auto w-full max-w-xs")
+      Combobox(items={tools} disabled={true})
+        ComboboxInput(aria-label="Unavailable tool picker" placeholder="Not available yet" disabled={true})

@@ -1,0 +1,99 @@
+/* Shared presentation for the live examples. Registry sources stay independent. */
+@layer components {
+  .preview-stack { @apply flex w-full min-w-0 flex-col gap-7; }
+  .preview-section { @apply flex min-w-0 flex-col gap-4; }
+  .preview-section + .preview-section { @apply border-t border-sidebar-border pt-6; }
+  .preview-label { @apply text-xs font-medium text-muted-foreground; }
+  .preview-row { @apply flex flex-wrap items-center justify-center gap-4; }
+  .preview-caption { @apply font-mono text-[10px] text-muted-foreground; }
+  .preview-note { @apply text-center text-xs leading-relaxed text-muted-foreground; }
+  .preview-card { @apply rounded-2xl border border-sidebar-border bg-background/50 p-5; }
+  .preview-input { @apply h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring; }
+
+  .showcase-preview .cn-alert { @apply grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-xl border border-sidebar-border bg-background/50 p-4 text-sm; }
+  .showcase-preview .cn-alert > svg { @apply row-span-2 mt-0.5 size-4; }
+  .showcase-preview .cn-alert-title { @apply col-start-2 font-medium; }
+  .showcase-preview .cn-alert-description { @apply col-start-2 text-xs leading-relaxed text-muted-foreground; }
+  .showcase-preview .cn-alert-action { @apply col-start-2 mt-2; }
+  .showcase-preview .cn-alert-variant-destructive { @apply border-destructive/25 bg-destructive/5 text-destructive; }
+  .showcase-preview .cn-alert-variant-destructive .cn-alert-description { @apply text-destructive/80; }
+
+  .showcase-preview .cn-bubble-group { @apply gap-3; }
+  .showcase-preview .cn-bubble { @apply max-w-[85%] rounded-2xl; }
+  .showcase-preview .cn-bubble[data-align="end"] { @apply ml-auto; }
+  .showcase-preview .cn-bubble-content { @apply px-4 py-3 text-sm leading-relaxed; }
+  .showcase-preview .cn-bubble-variant-default { @apply bg-primary text-primary-foreground; }
+  .showcase-preview .cn-bubble-variant-secondary { @apply bg-secondary text-secondary-foreground; }
+  .showcase-preview .cn-bubble-variant-muted { @apply bg-muted text-muted-foreground; }
+  .showcase-preview .cn-bubble-variant-tinted { @apply bg-positive/10 text-foreground; }
+  .showcase-preview .cn-bubble-variant-outline { @apply border border-sidebar-border; }
+  .showcase-preview .cn-bubble-variant-ghost { @apply text-muted-foreground; }
+  .showcase-preview .cn-bubble-variant-destructive { @apply bg-destructive/10 text-destructive; }
+  .showcase-preview .cn-bubble-reactions { @apply gap-1 rounded-full border border-sidebar-border bg-surface px-2 py-1 text-xs text-foreground shadow-xs; }
+  .showcase-preview .cn-bubble-reactions[data-side="bottom"] { @apply -bottom-3; }
+  .showcase-preview .cn-bubble-reactions[data-side="top"] { @apply -top-3; }
+  .showcase-preview .cn-bubble-reactions[data-align="start"] { @apply left-3; }
+  .showcase-preview .cn-bubble-reactions[data-align="end"] { @apply right-3; }
+
+  .showcase-preview .cn-checkbox { @apply flex size-4 items-center justify-center rounded-[5px] border border-input bg-background focus-visible:ring-3 focus-visible:ring-ring/50; }
+  .showcase-preview .cn-checkbox:is([data-checked], [data-indeterminate]) { @apply border-primary bg-primary text-primary-foreground; }
+  .showcase-preview .cn-checkbox[data-disabled] { @apply cursor-not-allowed opacity-50; }
+  .showcase-preview .cn-checkbox-indicator::after { content: ''; display: block; width: 8px; height: 5px; border-left: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-1px) rotate(-45deg); }
+  .showcase-preview .cn-checkbox[data-indeterminate] .cn-checkbox-indicator::after { height: 0; border-left: 0; transform: none; }
+
+  .showcase-popover { @apply max-w-[calc(100vw-2rem)] rounded-2xl border border-sidebar-border bg-popover p-5 text-popover-foreground shadow-lg transition-[opacity,transform] duration-150 data-starting-style:scale-95 data-starting-style:opacity-0 data-ending-style:scale-95 data-ending-style:opacity-0; }
+  .showcase-popover .cn-popover-header { @apply mb-4 flex flex-col gap-1.5; }
+  .showcase-popover .cn-popover-title { @apply text-sm font-medium; }
+  .showcase-popover .cn-popover-description { @apply text-xs leading-relaxed text-muted-foreground; }
+  .cn-drawer-overlay { @apply bg-black/35; }
+  .showcase-drawer { @apply border border-sidebar-border bg-popover text-popover-foreground shadow-xl; }
+  .showcase-drawer[data-swipe-direction="down"] { @apply rounded-t-3xl; }
+  .showcase-drawer[data-swipe-direction="right"] { @apply rounded-l-3xl; }
+  .showcase-drawer .cn-drawer-swipe-handle { @apply mx-auto my-3 h-1 w-10 rounded-full bg-muted-foreground/30; }
+  .showcase-drawer .cn-drawer-title { @apply text-lg font-medium tracking-tight; }
+  .showcase-drawer .cn-drawer-description { @apply mt-2 text-sm leading-relaxed text-muted-foreground; }
+}
+
+@layer components {
+  .showcase-accordion { @apply rounded-xl border border-sidebar-border bg-background/40 px-4; }
+  .showcase-accordion .cn-accordion-item + .cn-accordion-item { @apply border-t border-sidebar-border; }
+  .showcase-accordion .cn-accordion-trigger { @apply items-center gap-4 py-4 text-left text-sm font-medium focus-visible:ring-2 focus-visible:ring-ring; }
+  .showcase-accordion .cn-accordion-trigger-icon { @apply size-4 text-muted-foreground; }
+  .showcase-accordion .cn-accordion-content-inner { @apply pb-4 text-sm leading-relaxed text-muted-foreground; }
+  .cn-alert-dialog-overlay { @apply bg-black/40; }
+  .showcase-alert-dialog { @apply max-w-[calc(100vw-2rem)] gap-6 rounded-2xl border border-sidebar-border bg-popover p-6 text-popover-foreground shadow-xl sm:max-w-md; }
+  .showcase-alert-dialog[data-size="sm"] { @apply sm:max-w-sm; }
+  .showcase-alert-dialog .cn-alert-dialog-header { @apply flex flex-col gap-2; }
+  .showcase-alert-dialog .cn-alert-dialog-title { @apply text-lg font-medium tracking-tight; }
+  .showcase-alert-dialog .cn-alert-dialog-description { @apply text-sm leading-relaxed text-muted-foreground; }
+
+  .showcase-preview .cn-attachment { @apply gap-3 rounded-xl border-sidebar-border p-3; }
+  .showcase-preview .cn-attachment[data-state="error"] { @apply border-destructive/30; }
+  .showcase-preview .cn-attachment-media-variant-icon { @apply size-10 rounded-lg bg-muted; }
+  .showcase-preview .cn-attachment-media-variant-image { @apply overflow-hidden rounded-lg; }
+  .showcase-preview .cn-attachment-title { @apply text-sm font-medium; }
+  .showcase-preview .cn-attachment-description { @apply mt-1 text-xs; }
+  .showcase-preview .cn-attachment-size-sm { @apply gap-2 p-2; }
+  .showcase-preview .cn-attachment-size-sm .cn-attachment-media { @apply size-8; }
+  .showcase-preview .cn-attachment-orientation-vertical .cn-attachment-content { @apply w-full; }
+
+  .showcase-preview .cn-input-group { @apply min-h-10 gap-2 rounded-xl border border-input bg-background/40 px-3 text-sm has-[:focus-visible]:border-ring has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/30; }
+  .showcase-preview .cn-input-group-input { @apply w-full py-2; }
+  .showcase-preview .cn-input-group-textarea { @apply w-full basis-full py-3; }
+  .showcase-preview .cn-input-group-addon { @apply gap-2 text-muted-foreground; }
+  .showcase-preview .cn-input-group-addon-align-block-end { @apply pb-3; }
+  .showcase-preview .cn-input-group-addon-align-block-start { @apply pt-3; }
+  .showcase-preview .cn-input-group-text { @apply whitespace-nowrap text-xs; }
+  .showcase-preview .cn-input-group-button-size-icon-xs { @apply size-6 p-0; }
+  .showcase-preview .cn-input-group-button-size-icon-sm { @apply size-7 p-0; }
+  .showcase-preview .cn-input-group-button-size-xs { @apply h-6 px-2 text-xs; }
+  .showcase-preview .cn-input-group-button-size-sm { @apply h-7 px-2.5 text-xs; }
+  .showcase-preview .cn-combobox-input { @apply w-full; }
+
+  .showcase-combobox { @apply rounded-xl border border-sidebar-border bg-popover p-1 text-popover-foreground shadow-lg; }
+  .showcase-combobox .cn-combobox-list { @apply max-h-60; }
+  .showcase-combobox .cn-combobox-item { @apply items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm data-highlighted:bg-muted; }
+  .showcase-combobox .cn-combobox-empty { @apply px-3 py-6 text-center text-xs text-muted-foreground; }
+  .showcase-combobox .cn-combobox-empty:empty { display: none; }
+  .showcase-combobox .cn-combobox-item-indicator { @apply ml-auto; }
+}

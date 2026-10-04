@@ -1,28 +1,28 @@
 import { useState } from "octane";
+import Button from "@beast-ui/registry/ui/button";
 import ScrubField from "@beast-ui/registry/ui/scrubfield";
 
 props {}:{}
 setup
-  const [opacity, setOpacity] = useState(50)
-div(className="flex flex-col items-center gap-6")
-  div(className="flex flex-wrap items-center justify-center gap-6")
-    ScrubField(label="Opacity" suffix="%" value={opacity} onChange={setOpacity} chipColor="var(--muted)" accent="var(--border)" size='sm')
-    ScrubField(label="Health" defaultValue={25} minValue={0} maxValue={100} disabled={false} chipColor="var(--border)")
-    ScrubField(
-      ~ label="Radius"
-      ~ suffix="px"
-      ~ defaultValue={25}
-      ~ step={1}
-      ~ size="lg"
-      ~ sensitivity={2}
-      ~ rubberReach={6}
-      ~ returnDuration={300}
-      ~ coarseMultiplier={10}
-      ~ fineMultiplier={0.1}
-      ~ showDelta
-      ~ showDirty={false}
-      ~ showFill
-      ~ accent="var(--muted-foreground)"
-      ~ chipColor="var(--muted)"
-      ~ )
-  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Just hover and drag.
+  const [opacity, setOpacity] = useState(75)
+  const [radius, setRadius] = useState(24)
+  const [rotation, setRotation] = useState(0)
+div.preview-stack
+  section.preview-section(aria-label="Edit a shape with scrub fields")
+    div(className="flex items-center justify-between gap-3")
+      h2.preview-label A tiny shape editor
+      Button(size="xs" variant="ghost" onClick={() => { setOpacity(75); setRadius(24); setRotation(0); }}) Reset
+    div(className="grid items-center gap-6 sm:grid-cols-[1fr_auto]")
+      div(className="preview-card flex min-h-52 items-center justify-center overflow-hidden bg-[radial-gradient(var(--border)_0.75px,transparent_0.75px)] bg-size-[12px_12px]")
+        div(className="size-28 bg-linear-to-br from-violet-400 to-indigo-600 shadow-lg" style={{ opacity: opacity / 100, borderRadius: `${radius}px`, transform: `rotate(${rotation}deg)` }} aria-label="Shape preview")
+      div(className="flex flex-wrap justify-center gap-3 sm:flex-col")
+        ScrubField(label="Opacity" suffix="%" value={opacity} onChange={setOpacity} min={0} max={100} accent="#a78bfa" chipColor="#27272a" className="text-zinc-100")
+        ScrubField(label="Radius" suffix="px" value={radius} onChange={setRadius} min={0} max={56} accent="#a78bfa" chipColor="#27272a" className="text-zinc-100")
+        ScrubField(label="Rotate" suffix="°" value={rotation} onChange={setRotation} min={-180} max={180} accent="#a78bfa" chipColor="#27272a" className="text-zinc-100")
+  section.preview-section(aria-label="Scrub field sizes and states")
+    h2.preview-label Small, precise, or locked
+    div.preview-row
+      ScrubField(label="Spacing" suffix="px" defaultValue={8} min={0} max={32} size="sm" accent="#a78bfa" chipColor="#27272a" className="text-zinc-100")
+      ScrubField(label="Scale" suffix="×" defaultValue={1} min={0.1} max={3} step={0.1} size="lg" accent="#a78bfa" chipColor="#27272a" className="text-zinc-100")
+      ScrubField(label="Locked" defaultValue={42} disabled={true} chipColor="#27272a" className="text-zinc-100")
+    p.preview-note Drag horizontally, or click a value to type. Shift speeds up; Alt adds precision. Arrow keys work, too.

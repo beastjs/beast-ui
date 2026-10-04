@@ -1,0 +1,37 @@
+import { useState } from "octane";
+import AlertDialog, { AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@beast-ui/registry/ui/alert-dialog";
+import { buttonVariants } from "@beast-ui/registry/ui/button";
+
+props {}:{}
+setup
+  const [open, setOpen] = useState(false)
+  const [discardOpen, setDiscardOpen] = useState(false)
+  const [discarded, setDiscarded] = useState(false)
+  const [archived, setArchived] = useState(false)
+div.preview-stack
+  section.preview-section(aria-label="Archive confirmation")
+    h2.preview-label A moment to be sure
+    div.preview-row
+      AlertDialog(open={open} onOpenChange={setOpen})
+        AlertDialogTrigger(className={buttonVariants({ variant: "outline", size: "lg" })}) Archive project
+        AlertDialogContent(className="showcase-alert-dialog")
+          AlertDialogHeader
+            AlertDialogTitle Archive this project?
+            AlertDialogDescription The project will move out of your active list. You can restore it whenever you are ready.
+          AlertDialogFooter
+            AlertDialogCancel Keep project
+            AlertDialogAction(onClick={() => { setArchived(true); setOpen(false); }}) Archive project
+    p.preview-note(role="status") #{archived ? "Project archived. You can try the confirmation again." : "Your project is still active."}
+  section.preview-section(aria-label="Small confirmation")
+    h2.preview-label A smaller decision
+    div.preview-row
+      AlertDialog(open={discardOpen} onOpenChange={setDiscardOpen})
+        AlertDialogTrigger(className={buttonVariants({ variant: "ghost" })}) Discard draft
+        AlertDialogContent(size="sm" className="showcase-alert-dialog")
+          AlertDialogHeader
+            AlertDialogTitle Discard this draft?
+            AlertDialogDescription Your unsaved changes will be lost.
+          AlertDialogFooter
+            AlertDialogCancel Keep editing
+            AlertDialogAction(variant="destructive" onClick={() => { setDiscarded(true); setDiscardOpen(false); }}) Discard
+    p.preview-note(role="status") #{discarded ? "Draft discarded in this demo." : "Your draft is safe until you confirm."}

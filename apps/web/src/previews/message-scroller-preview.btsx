@@ -1,0 +1,40 @@
+import { useState } from "octane";
+import MessageScroller, { MessageScrollerProvider, MessageScrollerViewport, MessageScrollerContent, MessageScrollerItem, MessageScrollerButton, useMessageScroller } from "@beast-ui/registry/ui/message-scroller";
+import Button from "@beast-ui/registry/ui/button";
+
+module
+  const conversation = [
+    "What are we making today?",
+    "A small space for our next big idea.",
+    "Something calm, useful, and a little playful.",
+    "Let's start with a working prototype.",
+    "I have a few sketches ready to share.",
+    "The first version is always a conversation.",
+    "We can try it, learn from it, and keep going.",
+    "That sounds like a good place to start.",
+  ]
+component Conversation
+  props {}:{}
+  setup
+    const [messages, setMessages] = useState(conversation);
+    const { scrollToStart, scrollToEnd } = useMessageScroller();
+  div.preview-stack
+    section.preview-section(aria-label="Scrollable conversation")
+      h2.preview-label Pick up where the conversation left off
+      MessageScroller(className="h-80 rounded-2xl border border-sidebar-border bg-muted/20")
+        MessageScrollerViewport(aria-label="Demo conversation")
+          MessageScrollerContent(className="gap-4 p-5 pb-16")
+            each message, index in messages key index
+              MessageScrollerItem(messageId={`message-${index}`} scrollAnchor={index === messages.length - 1})
+                div(className={index % 2 ? "ml-auto max-w-[85%] rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground" : "mr-auto max-w-[85%] rounded-2xl bg-muted px-4 py-3 text-sm"}) #{message}
+        MessageScrollerButton(direction="start")
+        MessageScrollerButton(direction="end")
+      div.preview-row
+        Button(variant="outline" size="sm" onClick={() => scrollToStart()}) First message
+        Button(variant="outline" size="sm" onClick={() => scrollToEnd()}) Latest message
+        Button(size="sm" onClick={() => setMessages([...messages, `New idea ${messages.length - conversation.length + 1}: keep making things that feel good to use.`])}) Add message
+      p.preview-note Scroll up to see the jump buttons. New messages follow you when you are already at the bottom.
+
+props {}:{}
+MessageScrollerProvider
+  Conversation

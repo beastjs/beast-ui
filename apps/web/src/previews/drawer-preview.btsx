@@ -1,6 +1,53 @@
-import Drawer from "@beast-ui/registry/ui/drawer";
+import { useState } from "octane";
+import { Icon } from "@beast-ui/icons";
+import Drawer, { DrawerTrigger, DrawerClose, DrawerContent, DrawerHeader, DrawerFooter, DrawerTitle, DrawerDescription } from "@beast-ui/registry/ui/drawer";
+import Button, { buttonVariants } from "@beast-ui/registry/ui/button";
 
 props {}:{}
-div(className="flex flex-col items-center gap-6")
-  Drawer
-  p(className="max-w-md text-center text-xs leading-relaxed text-muted-foreground") Drawer dialog
+setup
+  const [open, setOpen] = useState(false)
+  const [saved, setSaved] = useState(false)
+div.preview-stack
+  section.preview-section(aria-label="Drawer directions")
+    h2.preview-label Make room for a little more
+    div(className="preview-row min-h-32")
+      Drawer(open={open} onOpenChange={setOpen} showSwipeHandle={true})
+        DrawerTrigger(className={buttonVariants({ variant: "outline", size: "lg" })})
+          Icon(name="folder")
+          | Open bottom drawer
+        DrawerContent(className="showcase-drawer")
+          div(className="mx-auto flex w-full max-w-md flex-col gap-6 overflow-y-auto px-6 pt-3 pb-8")
+            DrawerHeader
+              DrawerTitle A fresh start
+              DrawerDescription Your next project starts with a little space to think. Review the brief, then make it yours.
+            div(className="rounded-2xl border border-sidebar-border bg-muted/40 p-5")
+              p(className="text-xs text-muted-foreground") Project brief
+              p(className="mt-2 text-base font-medium") Something worth building
+              p(className="mt-3 text-sm leading-relaxed text-muted-foreground") A thoughtful interface, a few playful details, and components that feel right at home.
+            DrawerFooter(className="gap-2")
+              Button(onClick={() => { setSaved(true); setOpen(false); }}) Save project
+              DrawerClose(className={buttonVariants({ variant: "ghost" })}) Maybe later
+      Drawer(swipeDirection="right")
+        DrawerTrigger(className={buttonVariants({ variant: "outline", size: "lg" })})
+          Icon(name="sidebar")
+          | Open side drawer
+        DrawerContent(className="showcase-drawer")
+          div(className="flex h-full flex-col gap-6 overflow-y-auto p-6")
+            DrawerHeader
+              DrawerTitle Project details
+              DrawerDescription A side panel keeps extra context close at hand.
+            dl(className="grid gap-5 text-sm")
+              div
+                dt(className="text-xs text-muted-foreground") Workspace
+                dd(className="mt-1") Personal projects
+              div
+                dt(className="text-xs text-muted-foreground") Status
+                dd(className="mt-1 flex items-center gap-2")
+                  span(className="size-1.5 rounded-full bg-positive")
+                  | Ready to build
+              div
+                dt(className="text-xs text-muted-foreground") Components
+                dd(className="mt-1") Yours to make your own
+            DrawerFooter(className="gap-2")
+              DrawerClose(className={buttonVariants({ variant: "outline" })}) Close panel
+    p.preview-note(role="status") #{saved ? "Project saved. Open a drawer to try again." : "Open a panel. Swipe it away, press Escape, or click outside to close."}

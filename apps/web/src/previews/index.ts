@@ -22,4 +22,10 @@ export const previews: Record<string, Preview> = {
   checkbox: { icon: 'beast', component: lazy(() => import('./checkbox-preview.btsx')) },
   drawer: { icon: 'sidebar', component: lazy(() => import('./drawer-preview.btsx')) },
   popover: { icon: 'chevron-down', component: lazy(() => import('./popover-preview.btsx')) },
+  accordion: { icon: 'folder', component: lazy(() => import('./accordion-preview.btsx')) },
+  'alert-dialog': { icon: 'folder', component: lazy(() => import('./alert-dialog-preview.btsx')) },
+  attachment: { icon: 'folder', component: lazy(() => import('./attachment-preview.btsx')) },
+  combobox: { icon: 'folder', component: lazy(() => import('./combobox-preview.btsx')) },
+  'input-group': { icon: 'folder', component: lazy(() => import('./input-group-preview.btsx')) },
+  'message-scroller': { icon: 'folder', component: lazy(() => import('./message-scroller-preview.btsx')) },
 }
