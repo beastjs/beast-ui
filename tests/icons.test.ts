@@ -159,6 +159,9 @@ describe('Icon', () => {
     expect(first).toContain(`#${spin}{`)
     expect(generated.iconMarkup('faded', ':r1:')).toBe(first)
     expect(iconMarkup('search', ':r1:')).toBe(icons.search)
+    generated.icons.faded = String.raw`<path id="paint\dot"/><style>#paint\\dot{opacity:.5}</style>`
+    const escaped = generated.iconMarkup('faded', ':r1:')
+    expect(escaped).toContain(String.raw`#icon-3a-72-31-3a-paint\\dot{`)
   })
 
   test('a call site cannot name an icon that does not exist', () => {
