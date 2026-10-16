@@ -1,5 +1,6 @@
-import type { ClassValue } from 'octane'
+import type { ClassValue } from 'clsx'
 import type { JSX } from 'octane/jsx-runtime'
+import { cn } from '../../lib/utils.ts'
 
 module
   type NativeTableRowProps = JSX.IntrinsicElements['tr']
@@ -14,6 +15,6 @@ props { children, className, ...rowProps }: Props
 
 tr(
   ~ {...rowProps}
-  ~ className={[baseClassName, className]}
+  ~ className={cn(baseClassName, className)}
   ~ )
   | #{children}

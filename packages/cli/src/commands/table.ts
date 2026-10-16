@@ -27,6 +27,7 @@ const versions = {
   '3': ['0.1.54', '0.1.38', '0.0.20', '0.1.48', '0.1.42', '0.1.4', '0.1.53'],
   '4': ['0.1.55', '0.1.39', '0.0.21', '0.1.49', '0.1.43', '0.1.5', '0.1.54'],
   '8': ['0.1.59', '0.1.43', '0.0.25', '0.1.53', '0.1.47', '0.1.9', '0.1.58'],
+  '12': ['0.1.65', '0.1.49', '0.0.30', '0.1.58', '0.1.52', '0.1.15', '0.1.63'],
 } as const
 
 export async function initTable(options: TableInitOptions): Promise<TableSetupFile[]> {
@@ -48,8 +49,8 @@ export async function initTable(options: TableInitOptions): Promise<TableSetupFi
   // Resolve the installed version for workspace/file/range declarations too.
   const runtimePackage = await readOptional(path.join(cwd, 'node_modules/octane/package.json'))
   const runtime = runtimePackage ? JSON.parse(runtimePackage).version : declaredRuntime
-  const series = /^[~^]?0\.(2|3|4|8)\./.exec(runtime)?.[1] as keyof typeof versions | undefined
-  if (!series) throw new Error(`Unsupported Octane version ${runtime}. Table supports Octane 0.2.x, 0.3.x, 0.4.x, and 0.8.x; install your project's Octane dependency before retrying a workspace or complex range.`)
+  const series = /^[~^]?0\.(2|3|4|8|12)\./.exec(runtime)?.[1] as keyof typeof versions | undefined
+  if (!series) throw new Error(`Unsupported Octane version ${runtime}. Table supports Octane 0.2.x, 0.3.x, 0.4.x, 0.8.x, and 0.12.x; install your project's Octane dependency before retrying a workspace or complex range.`)
   const dependencies: Record<string, string> = { ...tableAssets.dependencies }
   bindings.forEach((name, index) => { dependencies[name] = versions[series][index] })
 
@@ -74,7 +75,7 @@ export async function initTable(options: TableInitOptions): Promise<TableSetupFi
   if (css === undefined || !/@import\s+["']tailwindcss(?:["'/])/.test(css)) throw new Error(`${stylesheet} must be an existing Tailwind v4 entry stylesheet with @import "tailwindcss".`)
   const files: TableSetupFile[] = []
   for (const [relative, source] of Object.entries(tableAssets.files)) {
-    const content = relative === 'table.css' ? source : source
+    const content = source
     const target = `${directory}/${relative}`
     if (target === stylesheet || target === 'package.json') throw new Error(`Table source conflicts with setup file: ${target}`)
     const existing = await readOptional(await safePath(cwd, target))
@@ -106,6 +107,7 @@ export async function initTable(options: TableInitOptions): Promise<TableSetupFi
     await writeFile(target, file.content, { flag: file.status === 'create' ? 'wx' : 'w' })
   }
   log(`Table ready. Import Table from './${directory}/table.btsx' (adjust relative to your component).`)
+  log(`For JSON data, import NewDataTable from './${directory}/new-data-table.btsx' and render it inside NuqsAdapter with data={rows}.`)
   if (options.skipInstall) log(`Install the dependencies listed above before building. Octane ${runtime} was preserved.`)
   return files
 }

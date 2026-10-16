@@ -9,6 +9,7 @@ app, and moves an existing app's `icons.ts` over.
 | --- | --- |
 | `bun run icons:build` | Builds `icons.ts` from the `.svg` files. |
 | `bun run icons:check` | Fails when `icons.ts` is out of date. For CI or a pre-commit hook. |
+| `bun run icons:unused` | Checks `icons.ts` and lists icon names not found in quoted strings in source files. |
 | `bun ~/Code/beast-ui/scripts/migrate-icons.ts` | Moves an older `icons.ts` map to `.svg` files. Once per app. |
 
 - [How the pieces fit](#how-the-pieces-fit)
@@ -188,7 +189,7 @@ src/lib/icons/
 scripts/build-icons.ts
 ```
 
-It installs SVGO as a dev dependency, adds `icons:build` and `icons:check` to
+It installs SVGO as a dev dependency, adds `icons:build`, `icons:check` and `icons:unused` to
 `package.json`, and runs the first build. Other package settings are preserved.
 Identical existing files are kept. Different files or existing scripts with
 other commands are reported as conflicts, and the command stops before making
@@ -200,7 +201,8 @@ The scripts are:
 
 ```json
 "icons:build": "bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts",
-"icons:check": "bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts --check"
+"icons:check": "bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts --check",
+"icons:unused": "bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts --check --unused src"
 ```
 
 Import `Icon` from `@/lib/icons`. In Beast, use
@@ -368,7 +370,7 @@ Three things keep it small:
    appears in quotes in the app's source:
 
    ```bash
-   bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts --check --unused src
+   bun run icons:unused
    ```
 
    A name built at runtime, such as `` `${kind}-outline` ``, is not found, so

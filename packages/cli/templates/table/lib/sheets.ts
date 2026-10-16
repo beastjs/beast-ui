@@ -1,5 +1,6 @@
 import { read, utils } from 'xlsx'
 
+export type SheetRow = string[]
 export interface SheetTable {
   name: string
   columns: string[]
@@ -12,6 +13,8 @@ export interface SheetTable {
 export interface SheetDocument {
   sheets: SheetTable[]
 }
+
+export type JsonSheetRow = Readonly<Record<string, unknown>>
 
 /** Upper bound on rendered rows; larger uploads show the head plus a notice. */
 export const MAX_SHEET_ROWS = 5000
@@ -145,12 +148,42 @@ function toDisplayCell(value: unknown): string {
   return String(value)
 }
 
+/** Convert JSON records into a sheet, keeping first-seen keys and string values intact. */
+export function jsonSheetDocument(data: readonly JsonSheetRow[], name = 'JSON data'): SheetDocument {
+  const columns: string[] = []
+  const seen = new Set<string>()
+  for (const row of data) {
+    if (columns.length >= MAX_SHEET_COLS) break
+    for (const key of Object.keys(row)) {
+      if (columns.length >= MAX_SHEET_COLS) break
+      if (!seen.has(key)) {
+        seen.add(key)
+        columns.push(key)
+      }
+    }
+  }
+  const rows = data.slice(0, MAX_SHEET_ROWS).map((row) =>
+    columns.map((key) => {
+      const cell = Object.hasOwn(row, key) ? row[key] : undefined
+      if (cell === null || cell === undefined) return ''
+      return typeof cell === 'object' ? (JSON.stringify(cell) ?? '') : String(cell)
+    })
+  )
+  return {
+    sheets: [{ name, columns, rows, totalRows: data.length, truncated: data.length > MAX_SHEET_ROWS }]
+  }
+}
+
 /** Preserve workbook order and empty worksheets; every cell becomes display text. */
 export function parseWorkbookSheets(bytes: ArrayBuffer): Array<{ name: string; grid: string[][] }> {
   const workbook = read(bytes, { type: 'array', dense: true })
   if (workbook.SheetNames.length === 0) throw new Error('The workbook has no sheets.')
   return workbook.SheetNames.map((name) => {
-    const grid = utils.sheet_to_json<string[]>(workbook.Sheets[name], { header: 1, defval: '', raw: false }) as string[][]
+    const grid = utils.sheet_to_json<string[]>(workbook.Sheets[name], {
+      header: 1,
+      defval: '',
+      raw: false
+    }) as string[][]
     return { name, grid: grid.map((row) => row.map(toDisplayCell)) }
   })
 }
@@ -362,9 +395,12 @@ export async function loadGoogleSheetDocument(input: string, timeoutMs = 20000):
   try {
     const response = await fetch(`https://docs.google.com/spreadsheets/d/${id}/export?format=xlsx`, {
       credentials: 'omit',
-      signal: controller.signal,
+      signal: controller.signal
     })
-    if (!response.ok) throw new Error('Google refused the workbook export. Enable anyone-with-the-link sharing and allow downloads, or upload an Excel copy.')
+    if (!response.ok)
+      throw new Error(
+        'Google refused the workbook export. Enable anyone-with-the-link sharing and allow downloads, or upload an Excel copy.'
+      )
     if (Number(response.headers.get('content-length')) > MAX_SHEET_BYTES) {
       throw new Error('The workbook is over the 10 MB import limit.')
     }
@@ -392,12 +428,17 @@ export async function loadGoogleSheetDocument(input: string, timeoutMs = 20000):
     }
     // SheetJS also accepts HTML; do not accidentally import a Google sign-in page.
     if (bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
-      throw new Error('Google did not return a workbook. Enable anyone-with-the-link sharing and allow downloads, or upload an Excel copy.')
+      throw new Error(
+        'Google did not return a workbook. Enable anyone-with-the-link sharing and allow downloads, or upload an Excel copy.'
+      )
     }
     return workbookDocument(bytes.buffer)
   } catch (failure) {
     if (controller.signal.aborted) throw new Error('Google did not respond in time. Try importing the sheet again.')
-    if (failure instanceof TypeError) throw new Error('Could not download the Google workbook. Check sharing and download permissions, or upload an Excel copy.')
+    if (failure instanceof TypeError)
+      throw new Error(
+        'Could not download the Google workbook. Check sharing and download permissions, or upload an Excel copy.'
+      )
     throw failure
   } finally {
     clearTimeout(timer)

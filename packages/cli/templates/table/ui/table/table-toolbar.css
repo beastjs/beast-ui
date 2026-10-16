@@ -1,0 +1,71 @@
+.table-section {
+  container: btable / inline-size;
+}
+
+.table-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding-block: 8px;
+}
+
+.table-toolbar-controls {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.table-toolbar-search {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  min-width: 0;
+}
+
+.table-search {
+  width: clamp(180px, 20cqi, 240px);
+  max-width: 100%;
+}
+
+.table-toolbar-summary {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-self: center;
+  min-width: 0;
+  max-width: 100%;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+@container btable (min-width: 1100px) {
+  .table-toolbar[data-has-summary='true'] {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .table-toolbar[data-has-summary='true'] .table-toolbar-summary {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .table-toolbar[data-has-summary='true'] .table-toolbar-search {
+    grid-column: 3;
+  }
+}
+
+.table-toolbar[data-search-expanded='true'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.table-toolbar[data-search-expanded='true'] .table-toolbar-controls,
+.table-toolbar[data-search-expanded='true'] .table-toolbar-summary {
+  display: none;
+}
+
+.table-toolbar[data-search-expanded='true'] .table-toolbar-search {
+  grid-column: 1;
+  width: 100%;
+}
+
+.table-search-expanded {
+  width: 100%;
+}

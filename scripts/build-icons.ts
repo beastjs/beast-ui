@@ -287,7 +287,7 @@ if (import.meta.main) {
     }
     if (values.unused) {
       const unused = await findUnused(names, values.unused, [output, directory])
-      console.log(unused.length ? `Not found in ${values.unused} (${unused.length}): ${unused.join(', ')}` : `Every icon is used in ${values.unused}`)
+      console.log(unused.length ? `Not found in ${values.unused} (${unused.length}):\n${unused.map((name, index) => `${index + 1}. ${name}`).join('\n')}` : `Every icon is used in ${values.unused}`)
     }
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))

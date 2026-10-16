@@ -1,6 +1,6 @@
 import { Button as BaseButton } from '@octanejs/base-ui/button'
 import { Menu } from '@octanejs/base-ui/menu'
-import type { ColumnOrderState, ColumnVisibilityState } from '@octanejs/tanstack-table'
+import type { ColumnOrderState, ColumnPinningState, ColumnVisibilityState } from '@octanejs/tanstack-table'
 import { createElement, Suspense, useCallback, useMemo, useState } from 'octane'
 import { lazyComponent } from '../../../lib/component-utils.ts'
 import { Icon } from '../../../lib/icons/index.ts'
@@ -10,6 +10,7 @@ import { getColumnHeaderText } from './filter-utils.ts'
 import type { ColumnPositionListProps, HyperViewColumn } from './table-contract.ts'
 import { isColumnVisible } from './visibility.ts'
 import Checkbox from '../../checkbox.btsx'
+import '../../popup-scrollbars.css'
 
 
 module
@@ -23,6 +24,7 @@ module
       updater: ColumnVisibilityState | ((old: ColumnVisibilityState) => ColumnVisibilityState)
     ) => void
     columnOrder?: ColumnOrderState
+    columnPinning?: ColumnPinningState
     onColumnOrderChange?: (columnOrder: ColumnOrderState) => void
   }
 
@@ -50,10 +52,11 @@ module
   )
   const TRIGGER_CLASSES = {
     none: TRIGGER_CLASS,
-    some: cn(TRIGGER_CLASS, 'gap-0.5 md:ps-1.5 md:pe-2 border-orange-400/60 dark:border-zinc-200/5 bg-orange-100/5 dark:bg-zinc-200/5')
+    some: cn(TRIGGER_CLASS, 'gap-0.5 md:ps-1.5 md:pe-2 border-zinc-800 bg-zinc-800 hover:border-zinc-800 hover:bg-zinc-800/90 data-pressed:border-zinc-800 data-pressed:bg-zinc-700 text-white dark:border-zinc-200/5 dark:bg-zinc-200/5')
+
   }
 
-  const ITEM_CLASS = 'group/view rounded-xs flex h-9 items-center justify-between opacity-80 dark:bg-zinc-300/5 px-3 py-1 text-sm text-btable-foreground/80 hover:bg-btable-sand/10 dark:hover:bg-orange-100/5 dark:hover:text-btable-sand/95'
+  const ITEM_CLASS = 'group/view rounded-xs flex h-9 items-center justify-between opacity-80 dark:bg-zinc-300/5 bg-zinc-200 px-3 py-1 text-sm text-foreground/80 hover:bg-zinc-200/50 dark:hover:bg-zinc-100/5 dark:hover:text-zinc-400'
   const ITEM_CLASSES = {
     hidden: cn(ITEM_CLASS),
     visible: cn(ITEM_CLASS, 'bg-transparent not-italic opacity-100 dark:bg-transparent dark:text-white')
@@ -73,10 +76,11 @@ component ColumnViewTrigger
     ~ className={cn(invisibleCount > 0 ? TRIGGER_CLASSES.some : TRIGGER_CLASSES.none, className)}
     ~ )
     if invisibleCount > 0
-      span(className='min-w-6 w-6 md:-ml-0.5 grow-0 rounded-xs bg-orange-400 font-okx font-semibold text-white dark:text-white dark:bg-btable-sand/80')
+      span(className='min-w-5 rounded-xs px-1 font-sans font-semibold text-white text-xs bg-orange-400 dark:text-white dark:bg-orange-400')
+
         | #{invisibleCount > 99 ? '99+' : invisibleCount}
     else
-      Icon(name='cols' className='size-5 opacity-80')
+      Icon(name='rows' className='size-4 -rotate-90 opacity-80')
     span(className='hidden font-mono text-xs opacity-70 md:flex uppercase') Cols
     | #{children}
 
@@ -104,7 +108,7 @@ component ColumnPositionFallback
   div(className='grid h-16 place-items-center')
     Icon(name='spinner-ring' className='size-4 opacity-60')
 
-props { cols, columnVisibility, onColumnVisibilityChange, columnOrder, onColumnOrderChange }: ColumnViewProps
+props { cols, columnVisibility, onColumnVisibilityChange, columnOrder, columnPinning, onColumnOrderChange }: ColumnViewProps
 setup
   const [isPositioning, setIsPositioning] = useState(false)
   const viewState = useMemo(() => {
@@ -124,7 +128,7 @@ setup
     )
 
     return { hideableColumns, invisibleCount, reorderableColumnIds, visibilityByColumnId }
-  }, [cols, columnVisibility])
+  }, [cols, columnVisibility, columnPinning])
   const { hideableColumns, invisibleCount, reorderableColumnIds, visibilityByColumnId } = viewState
   const canPositionColumns = Boolean(onColumnOrderChange && reorderableColumnIds.length > 1)
   const positioningEnabled = isPositioning && canPositionColumns
@@ -160,7 +164,7 @@ Menu.Root
   Menu.Trigger(render={createElement(ColumnViewTrigger, { invisibleCount })})
   Menu.Portal
     Menu.Positioner(align='start' className='isolate z-50 outline-none' sideOffset={7})
-      Menu.Popup(className=' pt-1 select-none origin-(--transform-origin) w-64 rounded-sm border border-btable-border/80 bg-zinc-200/20 dark:bg-zinc-900/50 backdrop-blur-3xl text-origin shadow-none outline-gray-200 transition-[transform,scale,opacity] data-ending-style:scale-90 data-ending-style:opacity-0 data-starting-style:scale-90 data-starting-style:opacity-0 dark:text-zinc-200')
+      Menu.Popup(className='table-popup-content pt-1 select-none origin-(--transform-origin) w-64 rounded-sm border border-btable-border/80 bg-btable-popover shadow-none outline-gray-200 transition-[transform,scale,opacity] data-ending-style:scale-90 data-ending-style:opacity-0 data-starting-style:scale-90 data-starting-style:opacity-0 dark:text-zinc-200')
         div(className='flex items-center justify-between border-b border-dashed border-btable-border px-4 py-1 font-sans text-sm')
           span(className='font-sans text-sm text-btable-muted-foreground')
             | #{positioningEnabled ? 'Position Columns' : 'View Options'}

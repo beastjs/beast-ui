@@ -1,6 +1,7 @@
 import { Popover as P } from '@octanejs/base-ui/popover'
 import type { ComponentProps } from 'octane'
 import { cn } from '../lib/utils.ts'
+import './popup-scrollbars.css'
 
 module
   type PopoverRoot = ComponentProps<typeof P.Root>
@@ -40,7 +41,7 @@ component PopoverContent
   props { className, align, alignOffset, side, sideOffset, ...popupProps }: PopoverContentProps
   P.Portal
     P.Positioner(align={align} alignOffset={alignOffset} side={side} sideOffset={sideOffset} className={POSITIONER_CLASS_NAME})
-      P.Popup(data-slot='popover-content' className={cn(POPUP_CLASS_NAME, className)} {...popupProps})
+      P.Popup(data-slot='popover-content' className={cn('table-popup-content', POPUP_CLASS_NAME, className)} {...popupProps})
 
 component PopoverTitle
   props { className, ...titleProps }: PopoverTitleProps

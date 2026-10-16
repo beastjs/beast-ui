@@ -1,6 +1,6 @@
 import { functionalUpdate, useTable } from '@octanejs/tanstack-table'
-import type { ColumnDef, ColumnFiltersState, ColumnPinningState, ColumnVisibilityState, PaginationState, RowData, SortingState } from '@octanejs/tanstack-table'
-import { useMemo, useState, type ClassValue } from 'octane'
+import type { ColumnDef, ColumnFiltersState, ColumnPinningState, ColumnVisibilityState, ExpandedState, GroupingState, PaginationState, RowData, RowSelectionState, SortingState } from '@octanejs/tanstack-table'
+import { useEffect, useId, useMemo, useRef, useState } from 'octane'
 import { Button } from '../index.ts'
 import SelectOctane from '../SelectOctane.btsx'
 import { TableBody } from './index.ts'
@@ -8,9 +8,24 @@ import Header from '../header.btsx'
 import HyperRow from './hyper/HyperRow.btsx'
 import HyperTable from './hyper/HyperTable.btsx'
 import ColumnView from './hyper/ColumnView.btsx'
+import ColumnPinning from './hyper/ColumnPinning.btsx'
+import ColumnGrouping from './hyper/ColumnGrouping.btsx'
+import GroupRow from './hyper/GroupRow.btsx'
+import { normalizeGrouping } from './hyper/column-grouping.ts'
+import SelectionMenu from './hyper/SelectionMenu.btsx'
+import CellEditHistoryControls from './hyper/CellEditHistoryControls.btsx'
 import Search from './hyper/HyperSearch.btsx'
+import './table-toolbar.css'
 import { getPinnedColumnLayouts, orderColumnsByPinning } from './hyper/column-pinning.ts'
 import { DEFAULT_SELECT_COLUMN_ID } from './hyper/selection.ts'
+import { cellAddressKey, extendCellSelection, getVisibleSelectedCells, moveCell, selectCellSelection, toggleCellSelection } from './hyper/cell-selection.ts'
+import { getInitialEditorValue, isAllowedCellValue } from './hyper/cell-editor.ts'
+import type { CellAddress, CellEditingOptions, CellMove, CellSelection } from './hyper/cell-selection.ts'
+import type { CellInteraction } from './hyper/cell-interaction.ts'
+import type { HyperCellModel } from './hyper/table-contract.ts'
+import { applyRowSelectionDrag } from './hyper/row-selection.ts'
+import { getNumericCellStatistics } from './hyper/cell-statistics.ts'
+import { getColumnHeaderText } from './hyper/filter-utils.ts'
 import { features } from './hyper/features.ts'
 import type { DataTableFilterListProps } from './types.ts'
 import type { OctaneNode } from 'octane'
@@ -18,18 +33,33 @@ import Popper from '../popper.btsx'
 import TableEmptyState from './table-empty-state.btsx'
 import { cn } from '../../lib/utils.ts'
 import { parseAsBoolean, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from '@octanejs/nuqs'
-import { createColumnFiltersParser, createColumnOrderParser, createColumnSizingParser, createColumnVisibilityParser } from './hyper/parsers.ts'
+import { createColumnFiltersParser, createColumnGroupingParser, createColumnOrderParser, createColumnSizingParser, createColumnVisibilityParser } from './hyper/parsers.ts'
 
 
 module
+  // This component cannot declare a row type parameter. Erase the grouping
+  // callback's row type at this boundary, just as we do for `getRowId`: its
+  // third argument otherwise makes ColumnDef<RowType> invariant even with any.
+  // Keep all other column options checked against the installed feature set.
+  interface ConsumerColumnGrouping {
+    getGroupingValue?: (originalRow: any, index: number, row: any) => any
+    columns?: ReadonlyArray<DataTableColumnDefinition>
+  }
+  type ConsumerColumnDefinition<Definition> = Definition extends unknown
+    ? Omit<Definition, 'getGroupingValue' | 'columns'> & ConsumerColumnGrouping
+    : never
+  type DataTableColumnDefinition = ConsumerColumnDefinition<ColumnDef<typeof features, any>>
+
   /**
    * A client-side table for arbitrary record-shaped data. Column definitions are
    * intentionally supplied by the consumer so this component has no knowledge
    * of a particular API, entity, or field name.
    */
   export interface DataTableProps {
-    columns: Array<ColumnDef<typeof features, any>>
+    columns: ReadonlyArray<DataTableColumnDefinition>
     data: ReadonlyArray<RowData>
+    /** Opt in to spreadsheet-style selection and editing with consumer-owned history. */
+    cellEditing?: CellEditingOptions
     /**
      * Optional call to action for the empty panel — typically "create the first
      * record". The table never learns what it does; it only decides when to
@@ -59,6 +89,8 @@ module
     initialColumnFilters?: ColumnFiltersState
     initialColumnPinning?: ColumnPinningState
     initialColumnVisibility?: ColumnVisibilityState
+    /** Ordered column ids used to group rows when the URL has no grouping. */
+    initialGrouping?: GroupingState
     initialPageSize?: number
     initialSorting?: SortingState
     pageSizes?: number[]
@@ -69,11 +101,15 @@ module
      */
     queryState?: DataTableQueryProgress
     showHeader?: boolean
+    /** Column carrying selection controls; real data columns keep their content. */
+    selectColumnId?: string
     rowClassName?: string
     viewportClassName?: string
     title?: string
     /** A compact table-scoping control rendered directly after the filter control. */
     titleActions?: OctaneNode
+    /** Centered toolbar information, such as column and row counts. */
+    toolbarSummary?: OctaneNode
     /**
      * Namespace for this table's query-string keys (`q` becomes `<prefix>q`,
      * and so on). Set it when more than one table shares a route so they don't
@@ -99,6 +135,7 @@ module
   }
 
   const DEFAULT_PAGE_SIZES = [50, 100, 250, 500]
+  const CELL_STATISTICS_FORMAT = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const DEFAULT_PINNING: ColumnPinningState = { start: [], end: [] }
   const NO_COLUMN_FILTERS: ColumnFiltersState = []
   const IDLE_QUERY_STATE: DataTableQueryProgress = {
@@ -109,14 +146,14 @@ module
     phase: 'idle',
     total: 0,
   }
-  const QUERY_KEYS = ['q', 'page', 'size', 'sort', 'desc', 'filters', 'visibility', 'order', 'widths'] as const
+  const QUERY_KEYS = ['q', 'page', 'size', 'sort', 'desc', 'filters', 'visibility', 'order', 'widths', 'group', 'selectRows', 'selectCells'] as const
 
   /**
    * Shared by the table viewport and the empty panel so the section keeps the
    * same height either way and the footer never jumps. `dvh` rather than `vh`
    * so a mobile browser's collapsing toolbar doesn't push the footer off.
    */
-  const VIEWPORT_CLASS_NAME = 'h-[calc(100dvh-157px)] md:h-[calc(100dvh-184px)] w-full'
+  const VIEWPORT_CLASS_NAME = 'h-[calc(100dvh-157px)] md:h-[calc(100dvh-164px)] w-full'
   const SCROLLBAR_CLASS_NAME =
     'overflow-auto scrollbar-track-btable-background scrollbar-track:rounded-full ::-webkit-scrollbar:horizontal:h-0.5 scrollbar-track-horizontal:w-1 dark:scrollbar-track-btable-sidebar hover:scrollbar-thumb-btable-sidebar-border scrollbar-thumb-btable-table-head scrollbar-thin scroll-smooth transision-colors duration-300 ease-out'
 
@@ -129,6 +166,7 @@ module
 props {
   ~ columns,
   ~ data,
+  ~ cellEditing,
   ~ emptyAction,
   ~ emptyActionLabel,
   ~ emptyDescription = 'Nothing has been recorded here yet.',
@@ -139,15 +177,18 @@ props {
   ~ initialColumnFilters = NO_COLUMN_FILTERS,
   ~ initialColumnPinning = DEFAULT_PINNING,
   ~ initialColumnVisibility = {},
+  ~ initialGrouping = [],
   ~ initialPageSize,
   ~ initialSorting = [],
   ~ pageSizes = DEFAULT_PAGE_SIZES,
   ~ queryState = IDLE_QUERY_STATE,
   ~ titleActions,
+  ~ toolbarSummary,
   ~ urlKeyPrefix = '',
   ~ children,
   ~ toolbarActions,
   ~ showHeader = true,
+  ~ selectColumnId = DEFAULT_SELECT_COLUMN_ID,
   ~ rowClassName,
   ~ viewportClassName = VIEWPORT_CLASS_NAME,
   ~ title = ''}: DataTableProps
@@ -176,10 +217,31 @@ setup
   // rather than inside `HyperSearch` because the controls it hides are the
   // field's siblings, not its children.
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
+  const [cellSelection, setCellSelection] = useState<CellSelection | null>(null)
+  const [editingCell, setEditingCell] = useState<{ address: CellAddress; value: string } | null>(null)
+  const [isCellDragging, setIsCellDragging] = useState(false)
+  const cellViewportRef = useRef<HTMLDivElement | null>(null)
+  const cellDragRef = useRef<{ pointerId: number; anchor: CellAddress; focus: CellAddress; capture: HTMLElement } | null>(null)
+  const rowDragRef = useRef<{
+    pointerId: number; anchor: string; focus: string; checked: boolean
+    initial: RowSelectionState; capture: HTMLElement
+  } | null>(null)
+  const suppressRowClickRef = useRef(false)
+  const [expanded, setExpanded] = useState<ExpandedState>({})
+  const cellInstructionsId = useId()
 
   // Column pinning stays local: it is a layout preference, not part of the
   // shareable query the URL describes.
   const [columnPinning, setColumnPinning] = useState(initialColumnPinning)
+  const groupableColumnIds = useMemo(() => {
+    const collect = (defs: ReadonlyArray<DataTableColumnDefinition>): string[] => defs.flatMap((column) => {
+      if ('columns' in column && column.columns) return collect(column.columns)
+      if (column.enableGrouping === false || column.id === DEFAULT_SELECT_COLUMN_ID) return []
+      return column.id && ('accessorKey' in column || 'accessorFn' in column || column.getGroupingValue)
+        ? [column.id] : []
+    })
+    return collect(columns)
+  }, [columns])
 
   const queryParsers = useMemo(
     () => ({
@@ -192,8 +254,11 @@ setup
       visibility: createColumnVisibilityParser(initialColumnVisibility),
       order: createColumnOrderParser(),
       widths: createColumnSizingParser(),
+      group: createColumnGroupingParser(groupableColumnIds, initialGrouping),
+      selectRows: parseAsBoolean.withDefault(false),
+      selectCells: parseAsBoolean.withDefault(false),
     }),
-    [sortIds.join(','), defaultPageSize, defaultSort?.id, defaultSort?.desc, JSON.stringify(initialColumnFilters)],
+    [sortIds.join(','), defaultPageSize, defaultSort?.id, defaultSort?.desc, JSON.stringify(initialColumnFilters), JSON.stringify(groupableColumnIds), JSON.stringify(initialGrouping)],
   )
   const queryOptions = useMemo(
     () =>
@@ -204,11 +269,22 @@ setup
   )
   const [query, setQuery] = useQueryStates(queryParsers, queryOptions)
 
+  const isRowSelectionEnabled = query.selectRows
+  const isCellSelectionEnabled = query.selectCells && !isRowSelectionEnabled
+  // Older shared URLs may enable both modes. Resolve them to Rows and remove
+  // the conflicting flag so reloading preserves the exclusive selection.
+  useEffect(() => {
+    if (query.selectRows && query.selectCells) void setQuery({ selectCells: false })
+  }, [query.selectRows, query.selectCells])
   const globalFilter = query.q
   const columnFilters = query.filters
   const columnOrder = query.order
   const columnVisibility = query.visibility
   const columnSizing = query.widths
+  // Revalidate after a source replacement, since URL state can outlive columns.
+  const grouping = useMemo(() => normalizeGrouping(query.group, groupableColumnIds), [query.group, groupableColumnIds])
+  const groupingKey = JSON.stringify(grouping)
+  useEffect(() => setExpanded({}), [groupingKey])
   const sorting = useMemo<SortingState>(
     () => (query.sort ? [{ id: query.sort, desc: query.desc }] : []),
     [query.sort, query.desc],
@@ -230,15 +306,27 @@ setup
     void setQuery({ page: next.pageIndex + 1, size: next.pageSize })
   }
 
-  const table = useTable(
+  const table = useTable<typeof features, any>(
     {
       data,
       columns,
       features,
       key: title,
       globalFilterFn: 'includesString',
+      enableRowSelection: (row) => isRowSelectionEnabled && !row.getIsGrouped(),
+      groupedColumnMode: false,
+      autoResetExpanded: false,
       getRowId: getRowId ?? ((row, index) => String(row.id ?? row._id ?? index)),
-      state: { columnFilters, columnOrder, columnPinning, columnSizing, columnVisibility, globalFilter, pagination, sorting },
+      state: { columnFilters, columnOrder, columnPinning, columnSizing, columnVisibility, expanded, globalFilter, grouping, pagination, sorting },
+      onExpandedChange: setExpanded,
+      onGroupingChange: (updater) => {
+        const next = normalizeGrouping(functionalUpdate(updater, grouping), groupableColumnIds)
+        if (isSameState(next, grouping)) return
+        setExpanded({})
+        setCellSelection(null)
+        setEditingCell(null)
+        void setQuery({ group: next, page: 1 })
+      },
       onColumnFiltersChange: (updater) => {
         const next = functionalUpdate(updater, columnFilters)
         if (isSameState(next, columnFilters)) return
@@ -288,6 +376,8 @@ setup
       columnResizing: state.columnResizing,
       columnSizing: state.columnSizing,
       globalFilter: state.globalFilter,
+      grouping: state.grouping,
+      expanded: state.expanded,
       pagination: state.pagination,
       rowSelection: state.rowSelection,
       sorting: state.sorting,
@@ -300,12 +390,367 @@ setup
   const tableColumnPinning = table.state.columnPinning
   const tableColumnVisibility = table.state.columnVisibility
   const tablePagination = table.state.pagination
+  const pageCount = Math.max(1, table.getPageCount())
+  useEffect(() => {
+    if (grouping.length > 0 && tablePagination.pageIndex >= pageCount) {
+      void setQuery({ page: pageCount })
+    }
+  }, [groupingKey, tablePagination.pageIndex, pageCount])
   const leafColumns = table.getAllLeafColumns()
+  // Editor behavior travels with column definitions, regardless of the row
+  // schema or how a consumer generates its columns.
+  const columnEditors = new Map(leafColumns.map((column) => [column.id, column.columnDef.meta?.editor]))
+  const groupableColumns = leafColumns.filter((column) => groupableColumnIds.includes(column.id) && column.getCanGroup())
   // Hoisted out of the row loop: this was one lookup per row, per render, for a
   // value that is the same for every row. Probing `leafColumns` rather than
   // calling `table.getColumn`, which logs "Column with id 'select' does not
   // exist" on a miss — a miss is the normal case for a table without checkboxes.
-  const showSelectColumn = leafColumns.some((column) => column.id === DEFAULT_SELECT_COLUMN_ID)
+  const hasSelectColumn = leafColumns.some((column) => column.id === selectColumnId)
+  const showSelectColumn = hasSelectColumn && isRowSelectionEnabled
+  // The core selected model includes selections on other pages and rows hidden
+  // by filters, while excluding stale ids from a replaced data set.
+  const selectedRowCount = table.getSelectedRowModel().flatRows.length
+  const handleToggleRowSelection = () => {
+    void setQuery((current) => ({ selectRows: !current.selectRows, selectCells: false }))
+  }
+  const handleToggleCellSelection = () => {
+    void setQuery((current) => ({ selectRows: false, selectCells: current.selectRows || !current.selectCells }))
+  }
+  const canSelectCells = Boolean(cellEditing) && isCellSelectionEnabled
+  const visibleDataRows = visibleRows.filter((row) => !row.getIsGrouped())
+  const allPageRowsSelected = visibleDataRows.length > 0 && visibleDataRows.every((row) => row.getIsSelected())
+  const somePageRowsSelected = visibleDataRows.some((row) => row.getIsSelected())
+  const selectPageRows = (checked: boolean) => table.setRowSelection((current) => {
+    const next = { ...current }
+    for (const row of visibleDataRows) {
+      if (!row.getCanSelect()) continue
+      if (checked) next[row.id] = true
+      else delete next[row.id]
+    }
+    return next
+  })
+  const visibleRowIds = visibleDataRows.map((row) => row.id)
+  const selectableRowIds = new Set(visibleDataRows.filter((row) => row.getCanSelect()).map((row) => row.id))
+  const visibleRowsKey = JSON.stringify(visibleRowIds)
+  const visibleCellColumns = orderColumnsByPinning(leafColumns, tableColumnPinning)
+    .filter((column) => column.id !== DEFAULT_SELECT_COLUMN_ID && column.getIsVisible())
+  const visibleCellColumnIds = visibleCellColumns.map((column) => column.id)
+  const cellColumnLabels = new Map(visibleCellColumns.map((column) => [column.id, getColumnHeaderText(column)]))
+  const visibleGridKey = JSON.stringify([visibleRowIds, visibleCellColumnIds])
+  const selectedCells = canSelectCells ? getVisibleSelectedCells(cellSelection, visibleRowIds, visibleCellColumnIds) : []
+  const selectedCellKeys = new Set(selectedCells.map(cellAddressKey))
+  const selectedCellStatistics = getNumericCellStatistics(
+    selectedCells.map(({ rowId, columnId }) => table.getRow(rowId).getValue(columnId)),
+  )
+  // A range refers to the current view. Clear it when a query, page or column
+  // layout changes so hidden cells cannot accidentally be edited or cleared.
+  useEffect(() => {
+    cellDragRef.current = null
+    setIsCellDragging(false)
+    setCellSelection(null)
+    setEditingCell(null)
+  }, [visibleGridKey, cellEditing?.resetKey, canSelectCells])
+
+  const selectCell = (address: CellAddress, extend = false, toggle = false) => {
+    setCellSelection((current) => toggle
+      ? toggleCellSelection(current, address)
+      : extend
+      ? extendCellSelection(current, address, visibleRowIds, visibleCellColumnIds)
+      : selectCellSelection(address))
+  }
+  const focusCell = (address: CellAddress) => selectCell(address)
+  const startRowDrag = (event: PointerEvent) => {
+    if (!showSelectColumn || event.button !== 0 || !event.isPrimary || !(event.target instanceof Element)) return
+    const target = event.target
+    const rowElement = target.closest<HTMLElement>('tr[data-row-id]')
+    const rowId = rowElement?.dataset.rowId
+    if (!rowElement || rowId === undefined || !selectableRowIds.has(rowId)) return
+    const handle = target.closest<HTMLElement>('[data-row-selection-handle]')
+    // Data cells retain spreadsheet gestures while both modes are enabled.
+    if (!handle && (canSelectCells || target.closest('button, input, select, textarea, a, form, label, [contenteditable="true"], [role="button"], [role="checkbox"], [role="menuitem"]'))) return
+    event.preventDefault()
+    event.stopPropagation()
+    const capture = handle?.querySelector<HTMLElement>('[role="checkbox"]') ?? rowElement
+    rowElement.querySelector<HTMLElement>('[role="checkbox"]')?.focus({ preventScroll: true })
+    setCellSelection(null)
+    const initial = { ...table.state.rowSelection }
+    const checked = !(Object.hasOwn(initial, rowId) && initial[rowId])
+    const drag = { pointerId: event.pointerId, anchor: rowId, focus: rowId, checked, initial, capture }
+    rowDragRef.current = drag
+    suppressRowClickRef.current = true
+    capture.setPointerCapture(event.pointerId)
+    table.setRowSelection(applyRowSelectionDrag(initial, drag, visibleRowIds, selectableRowIds))
+  }
+  const suppressRowDragClick = (event: MouseEvent) => {
+    if (!suppressRowClickRef.current || event.detail === 0) return
+    suppressRowClickRef.current = false
+    event.preventDefault()
+    event.stopPropagation()
+  }
+  useEffect(() => {
+    if (!showSelectColumn) return
+    const viewport = cellViewportRef.current
+    let pointer: { x: number; y: number } | null = null
+    let scrollFrame = 0
+    const selectAtPointer = () => {
+      const drag = rowDragRef.current
+      if (!drag || !pointer || !viewport) return
+      const bounds = viewport.getBoundingClientRect()
+      const headerBottom = viewport.querySelector('thead')?.getBoundingClientRect().bottom ?? bounds.top
+      const x = Math.max(bounds.left + 2, Math.min(bounds.right - 12, pointer.x))
+      const y = Math.max(headerBottom + 2, Math.min(bounds.bottom - 12, pointer.y))
+      const row = document.elementFromPoint(x, y)?.closest<HTMLElement>('tr[data-row-id]')
+      const rowId = row?.dataset.rowId
+      if (!row || rowId === undefined || !viewport.contains(row) || drag.focus === rowId) return
+      drag.focus = rowId
+      table.setRowSelection(applyRowSelectionDrag(drag.initial, drag, visibleRowIds, selectableRowIds))
+    }
+    const scrollAtEdge = () => {
+      scrollFrame = 0
+      if (!rowDragRef.current || !pointer || !viewport) return
+      const bounds = viewport.getBoundingClientRect()
+      const speed = pointer.y < bounds.top + 24 ? -Math.min(18, (bounds.top + 24 - pointer.y) / 2)
+        : pointer.y > bounds.bottom - 24 ? Math.min(18, (pointer.y - bounds.bottom + 24) / 2) : 0
+      const top = viewport.scrollTop
+      viewport.scrollBy({ top: speed, behavior: 'instant' })
+      if (top !== viewport.scrollTop) {
+        selectAtPointer()
+        scrollFrame = requestAnimationFrame(scrollAtEdge)
+      }
+    }
+    const updateDrag = (event: PointerEvent) => {
+      const drag = rowDragRef.current
+      if (!drag || drag.pointerId !== event.pointerId) return
+      pointer = { x: event.clientX, y: event.clientY }
+      selectAtPointer()
+      if (!scrollFrame && event.type === 'pointermove') scrollFrame = requestAnimationFrame(scrollAtEdge)
+    }
+    const finishDrag = (event?: PointerEvent) => {
+      const drag = rowDragRef.current
+      if (!drag || (event && drag.pointerId !== event.pointerId)) return
+      if (event?.type === 'pointerup') updateDrag(event)
+      rowDragRef.current = null
+      cancelAnimationFrame(scrollFrame)
+      scrollFrame = 0
+      pointer = null
+      if (drag.capture.hasPointerCapture(drag.pointerId)) drag.capture.releasePointerCapture(drag.pointerId)
+    }
+    const resetClick = () => { suppressRowClickRef.current = false }
+    const cancelDrag = () => finishDrag()
+    document.addEventListener('pointerdown', resetClick, true)
+    document.addEventListener('pointermove', updateDrag)
+    document.addEventListener('pointerup', finishDrag)
+    document.addEventListener('pointercancel', finishDrag)
+    document.addEventListener('lostpointercapture', finishDrag)
+    window.addEventListener('blur', cancelDrag)
+    return () => {
+      finishDrag()
+      suppressRowClickRef.current = false
+      document.removeEventListener('pointerdown', resetClick, true)
+      document.removeEventListener('pointermove', updateDrag)
+      document.removeEventListener('pointerup', finishDrag)
+      document.removeEventListener('pointercancel', finishDrag)
+      document.removeEventListener('lostpointercapture', finishDrag)
+      window.removeEventListener('blur', cancelDrag)
+    }
+  }, [visibleRowsKey, data, showSelectColumn, canSelectCells])
+  const startCellDrag = (event: PointerEvent, address: CellAddress) => {
+    if (!canSelectCells || event.button !== 0 || !event.isPrimary) return
+    event.preventDefault()
+    const capture = event.currentTarget as HTMLElement
+    // Commit any previous editor through its blur before replacing the range.
+    capture.focus({ preventScroll: true })
+    if (event.metaKey || event.ctrlKey) {
+      selectCell(address, false, true)
+      return
+    }
+    const anchor = event.shiftKey && cellSelection ? cellSelection.anchor : address
+    cellDragRef.current = { pointerId: event.pointerId, anchor, focus: address, capture }
+    capture.setPointerCapture(event.pointerId)
+    setIsCellDragging(true)
+    setCellSelection(extendCellSelection(selectCellSelection(anchor), address, visibleRowIds, visibleCellColumnIds))
+  }
+  useEffect(() => {
+    if (!canSelectCells) return
+    const viewport = cellViewportRef.current
+    let pointer: { x: number; y: number } | null = null
+    let scrollFrame = 0
+    const selectAtPointer = () => {
+      const drag = cellDragRef.current
+      if (!drag || !pointer || !viewport) return
+      const bounds = viewport.getBoundingClientRect()
+      const headerBottom = viewport.querySelector('thead')?.getBoundingClientRect().bottom ?? bounds.top
+      const x = Math.max(bounds.left + 2, Math.min(bounds.right - 12, pointer.x))
+      const y = Math.max(headerBottom + 2, Math.min(bounds.bottom - 12, pointer.y))
+      const target = document.elementFromPoint(x, y)?.closest<HTMLTableCellElement>('td[data-cell-row-id][data-cell-column-id]')
+      if (!target || !viewport.contains(target)) return
+      const address = { rowId: target.dataset.cellRowId!, columnId: target.dataset.cellColumnId! }
+      if (cellAddressKey(address) === cellAddressKey(drag.focus)) return
+      drag.focus = address
+      setCellSelection(extendCellSelection(selectCellSelection(drag.anchor), address, visibleRowIds, visibleCellColumnIds))
+    }
+    const scrollAtEdge = () => {
+      scrollFrame = 0
+      if (!cellDragRef.current || !pointer || !viewport) return
+      const bounds = viewport.getBoundingClientRect()
+      const edgeSpeed = (position: number, start: number, end: number) => position < start + 24
+        ? -Math.min(18, (start + 24 - position) / 2)
+        : position > end - 24 ? Math.min(18, (position - end + 24) / 2) : 0
+      const left = viewport.scrollLeft
+      const top = viewport.scrollTop
+      viewport.scrollBy({
+        left: edgeSpeed(pointer.x, bounds.left, bounds.right),
+        top: edgeSpeed(pointer.y, bounds.top, bounds.bottom),
+        behavior: 'instant',
+      })
+      if (left !== viewport.scrollLeft || top !== viewport.scrollTop) {
+        selectAtPointer()
+        scrollFrame = requestAnimationFrame(scrollAtEdge)
+      }
+    }
+    const updateDrag = (event: PointerEvent) => {
+      const drag = cellDragRef.current
+      if (!drag || drag.pointerId !== event.pointerId) return
+      pointer = { x: event.clientX, y: event.clientY }
+      selectAtPointer()
+      if (!scrollFrame && event.type === 'pointermove') scrollFrame = requestAnimationFrame(scrollAtEdge)
+    }
+    const finishDrag = (event?: PointerEvent) => {
+      const drag = cellDragRef.current
+      if (!drag || (event && event.pointerId !== drag.pointerId)) return
+      if (event?.type === 'pointerup') updateDrag(event)
+      cellDragRef.current = null
+      cancelAnimationFrame(scrollFrame)
+      scrollFrame = 0
+      pointer = null
+      if (drag.capture.hasPointerCapture(drag.pointerId)) drag.capture.releasePointerCapture(drag.pointerId)
+      setIsCellDragging(false)
+    }
+    const clearOutside = (event: PointerEvent) => {
+      const target = event.target
+      const cell = target instanceof Element ? target.closest('td[data-cell-row-id][data-cell-column-id]') : null
+      // Toolbar controls, headers, blank space, and other parts of the page
+      // clear the range; clicking an editor keeps its owning cell selected.
+      if (!cell || !viewport?.contains(cell)
+        || (target instanceof Element && target.closest('.table-selection-control'))) {
+        finishDrag()
+        setCellSelection(null)
+      }
+    }
+    const cancelDrag = () => finishDrag()
+    document.addEventListener('pointerdown', clearOutside, true)
+    document.addEventListener('pointermove', updateDrag)
+    document.addEventListener('pointerup', finishDrag)
+    document.addEventListener('pointercancel', finishDrag)
+    document.addEventListener('lostpointercapture', finishDrag)
+    window.addEventListener('blur', cancelDrag)
+    return () => {
+      finishDrag()
+      document.removeEventListener('pointerdown', clearOutside, true)
+      document.removeEventListener('pointermove', updateDrag)
+      document.removeEventListener('pointerup', finishDrag)
+      document.removeEventListener('pointercancel', finishDrag)
+      document.removeEventListener('lostpointercapture', finishDrag)
+      window.removeEventListener('blur', cancelDrag)
+    }
+  }, [visibleGridKey, cellEditing?.resetKey, canSelectCells])
+  const startCellEdit = (address: CellAddress, value: string) => {
+    if (!canSelectCells || columnEditors.get(address.columnId) === false) return
+    selectCell(address)
+    setEditingCell({ address, value })
+  }
+  const commitCellEdit = (address: CellAddress, value: string, direction?: CellMove) => {
+    if (!isAllowedCellValue(columnEditors.get(address.columnId), value)) return
+    cellEditing?.onEdit([{ ...address, value }])
+    setEditingCell(null)
+    const next = direction ? moveCell(address, visibleRowIds, visibleCellColumnIds, direction, true) : null
+    if (next) focusCell(next)
+  }
+  const handleCellKeyDown = (event: KeyboardEvent, address: CellAddress, value: string) => {
+    if (event.defaultPrevented || event.isComposing || !canSelectCells) return
+    // Table-level undo shortcuts are handled below. The live editor keeps its
+    // native text undo, and search/other inputs never enter this handler.
+    if (event.metaKey || event.ctrlKey || event.altKey) return
+    const directions: Record<string, CellMove> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }
+    const direction = directions[event.key]
+    if (direction || event.key === 'Tab') {
+      const next = moveCell(address, visibleRowIds, visibleCellColumnIds, direction ?? (event.shiftKey ? 'left' : 'right'), event.key === 'Tab')
+      // Leave the grid at its first/last cell rather than trapping Tab focus.
+      if (event.key === 'Tab' && next && cellAddressKey(next) === cellAddressKey(address)) return
+      event.preventDefault()
+      if (next) {
+        if (event.shiftKey && event.key !== 'Tab') selectCell(next, true)
+        else focusCell(next)
+      }
+    } else if (event.key === ' ') {
+      event.preventDefault()
+      selectCell(address)
+    } else if (event.key === 'Enter' || event.key === 'F2') {
+      event.preventDefault()
+      startCellEdit(address, value)
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      setCellSelection(null)
+    } else if (event.key === 'Delete' || event.key === 'Backspace') {
+      event.preventDefault()
+      const edits = (selectedCells.length > 0 ? selectedCells : [address])
+        .filter((cell) => isAllowedCellValue(columnEditors.get(cell.columnId), ''))
+        .map((cell) => ({ ...cell, value: '' }))
+      if (edits.length > 0) cellEditing?.onEdit(edits)
+    } else if (event.key.length === 1) {
+      event.preventDefault()
+      const editor = columnEditors.get(address.columnId)
+      if (editor !== false) startCellEdit(address, getInitialEditorValue(editor, value, event.key))
+    }
+  }
+  const getCellInteraction = (rowId: string, cell: HyperCellModel): CellInteraction | undefined => {
+    if (!canSelectCells || cell.column.id === DEFAULT_SELECT_COLUMN_ID) return undefined
+    const address = { rowId, columnId: cell.column.id }
+    const key = cellAddressKey(address)
+    const active = cellSelection !== null && key === cellAddressKey(cellSelection.focus)
+    const editing = editingCell !== null && key === cellAddressKey(editingCell.address)
+    const value = String(cell.getValue() ?? '')
+    const editor = cell.column.columnDef.meta?.editor
+    return {
+      selected: selectedCellKeys.has(key),
+      active,
+      tabbable: !cellSelection && rowId === visibleRowIds[0] && cell.column.id === visibleCellColumnIds[0],
+      editing,
+      editable: editor !== false,
+      dragging: isCellDragging,
+      editor: editor === false ? undefined : editor,
+      address,
+      value: editing ? editingCell!.value : value,
+      label: `${cellColumnLabels.get(cell.column.id) ?? cell.column.id}, row ${visibleRowIds.indexOf(rowId) + 1}`,
+      onSelect: (event) => {
+        // Pointer selection is handled on press; its release click must not
+        // collapse the rectangle. Synthetic/assistive clicks still select.
+        if (event.detail === 0) selectCell(address, event.shiftKey, event.metaKey || event.ctrlKey)
+      },
+      onPointerDown: (event) => startCellDrag(event, address),
+      onFocus: () => focusCell(address),
+      onStartEdit: (initialValue) => startCellEdit(address, initialValue ?? value),
+      onCommit: (nextValue, direction) => commitCellEdit(address, nextValue, direction),
+      onCancel: () => setEditingCell(null),
+      onKeyDown: (event) => handleCellKeyDown(event, address, value),
+    }
+  }
+  const handleEditHistoryKeyDown = (event: KeyboardEvent) => {
+    if (!cellEditing || event.defaultPrevented || event.isComposing || event.altKey || !(event.metaKey || event.ctrlKey)) return
+    const target = event.target
+    if (target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"]')) return
+    const key = event.key.toLowerCase()
+    if (key === 'z') {
+      event.preventDefault()
+      if (event.shiftKey ? cellEditing.canRedo : cellEditing.canUndo) {
+        if (event.shiftKey) cellEditing.onRedo()
+        else cellEditing.onUndo()
+      }
+    } else if (key === 'y' && event.ctrlKey && !event.shiftKey) {
+      event.preventDefault()
+      if (cellEditing.canRedo) cellEditing.onRedo()
+    }
+  }
   const pinnedColumnLayouts = useMemo(
     () => getPinnedColumnLayouts(
       orderColumnsByPinning(table.getAllLeafColumns(), table.state.columnPinning),
@@ -340,7 +785,7 @@ setup
     : Math.min(100, (queryState.completed / queryState.total) * 100)
   const queryLabel = queryState.phase === 'sorting' ? 'Ranking' : 'Searching'
 
-section(className='relative overflow-hidden rounded-xs md:bg-btable-surface')
+section(className='table-section relative overflow-hidden rounded-xs md:bg-btable-surface' onKeyDown={handleEditHistoryKeyDown})
   if showHeader
     div(className='hidden md:flex items-center justify-between p-2')
       Header(eyebrow={eyebrow} title={title} description='Browse, sort, filter, and select your data.')
@@ -350,14 +795,27 @@ section(className='relative overflow-hidden rounded-xs md:bg-btable-surface')
   // other control in it stands down for the duration. Hidden rather than
   // unmounted: they keep their own state and the row is whole again the moment
   // the field closes. `HyperSearch` never reports expanded on desktop.
-  div(className='flex items-center justify-between h-12 px-2 dark:bg-btable-sunken dark:md:bg-btable-surface')
-    div(className={cn('flex items-end gap-1.5 md:gap-2 h-fit', isSearchExpanded && 'hidden md:flex')})
+  div(className='table-toolbar px-2 dark:bg-btable-sunken dark:md:bg-btable-surface' data-has-summary={Boolean(toolbarSummary)} data-search-expanded={isSearchExpanded})
+    div(className='table-toolbar-controls flex items-center gap-1.5 md:gap-2')
       ColumnView(
         ~ cols={leafColumns}
         ~ columnVisibility={tableColumnVisibility}
         ~ onColumnVisibilityChange={table.setColumnVisibility}
         ~ columnOrder={table.state.columnOrder}
+        ~ columnPinning={tableColumnPinning}
         ~ onColumnOrderChange={table.setColumnOrder}
+        ~ )
+      ColumnPinning(
+        ~ columns={leafColumns}
+        ~ columnPinning={tableColumnPinning}
+        ~ onChange={table.setColumnPinning}
+        ~ )
+      ColumnGrouping(
+        ~ columns={groupableColumns}
+        ~ grouping={grouping}
+        ~ onChange={table.setGrouping}
+        ~ onExpandAll={() => { setExpanded(true); void setQuery({ page: 1 }) }}
+        ~ onCollapseAll={() => { setExpanded({}); void setQuery({ page: 1 }) }}
         ~ )
       if FilterList
         FilterList(
@@ -366,13 +824,39 @@ section(className='relative overflow-hidden rounded-xs md:bg-btable-surface')
           ~ onReset={handleResetFilters}
           ~ canReset={!isSameState(columnFilters, initialColumnFilters)}
           ~ )
+      if hasSelectColumn || cellEditing
+        SelectionMenu(
+          ~ showRows={hasSelectColumn}
+          ~ showCells={Boolean(cellEditing)}
+          ~ rowsEnabled={isRowSelectionEnabled}
+          ~ cellsEnabled={isCellSelectionEnabled}
+          ~ selectedRowCount={selectedRowCount}
+          ~ selectedCellCount={selectedCells.length}
+          ~ disabled={data.length === 0}
+          ~ onToggleRows={handleToggleRowSelection}
+          ~ onToggleCells={handleToggleCellSelection}
+          ~ )
+      if cellEditing
+        CellEditHistoryControls(
+          ~ disabled={data.length === 0}
+          ~ canUndo={cellEditing.canUndo}
+          ~ canRedo={cellEditing.canRedo}
+          ~ onUndo={cellEditing.onUndo}
+          ~ onRedo={cellEditing.onRedo}
+          ~ )
       if titleActions && !isSearchExpanded
         div(className='min-w-0')
           | #{titleActions}
-    div(className={cn('flex items-center gap-2.5 h-12', isSearchExpanded && 'w-full md:w-auto')})
+    if toolbarSummary
+      div(className='table-toolbar-summary')
+        | #{toolbarSummary}
+    div(className='table-toolbar-search flex items-center gap-2.5')
       if toolbarActions
         | #{toolbarActions}
       Search(value={globalFilter} onChange={handleSearchChange} onClear={handleClearSearch} onExpandedChange={setIsSearchExpanded})
+
+  if cellEditing
+    p(id={cellInstructionsId} className='sr-only') Click a cell to select it. Command-click or Control-click adds or removes individual cells. Hold and drag to select a rectangle. Clicking elsewhere clears the selection. Shift-click or Shift-arrow extends the range. Arrow keys move selection; Space selects the focused cell. Enter, F2 or double-click edits. Enter and Tab save; Escape cancels. Delete clears selected cells. Use Command or Control Z to undo, and Shift Command or Control Z to redo.
 
   if isEmpty
     div(className={viewportClassName})
@@ -385,31 +869,57 @@ section(className='relative overflow-hidden rounded-xs md:bg-btable-surface')
         ~ actionLabel={emptyActionLabel}
         ~ )
   else
-    div(className={cn(viewportClassName, SCROLLBAR_CLASS_NAME)})
+    div(
+      ~ ref={cellViewportRef}
+      ~ className={cn(viewportClassName, SCROLLBAR_CLASS_NAME)}
+      ~ data-row-selection-mode={showSelectColumn ? (canSelectCells ? 'handles' : 'rows') : undefined}
+      ~ onPointerDownCapture={startRowDrag}
+      ~ onClickCapture={suppressRowDragClick}
+      ~ )
       HyperTable(
         ~ table={table}
+        ~ cellSelectionEnabled={canSelectCells}
+        ~ cellInstructionsId={cellEditing ? cellInstructionsId : undefined}
         ~ title={title}
         ~ columnPinning={tableColumnPinning}
         ~ columnVisibility={tableColumnVisibility}
-        ~ selectAllChecked={table.getIsAllPageRowsSelected()}
-        ~ onSelectAllChange={(checked: boolean) => table.toggleAllPageRowsSelected(checked)}
+        ~ selectColumnId={selectColumnId}
+        ~ selectAllChecked={allPageRowsSelected}
+        ~ selectAllIndeterminate={somePageRowsSelected && !allPageRowsSelected}
+        ~ onSelectAllChange={showSelectColumn ? selectPageRows : undefined}
         ~ )
         TableBody
           each row in visibleRows key row.id
-            HyperRow(
-              ~ row={row}
-              ~ className={rowClassName}
-              ~ isActive={false}
-              ~ isEditing={false}
-              ~ isPinned={false}
-              ~ isSelected={row.getIsSelected()}
-              ~ showSelectColumn={showSelectColumn}
-              ~ columnPinning={tableColumnPinning}
-              ~ columnVisibility={tableColumnVisibility}
-              ~ pinnedColumnLayouts={pinnedColumnLayouts}
-              ~ )
+            if row.getIsGrouped()
+              GroupRow(
+                ~ rowId={row.id}
+                ~ columnLabel={getColumnHeaderText(leafColumns.find((column) => column.id === row.groupingColumnId) ?? { id: row.groupingColumnId ?? '', columnDef: {} })}
+                ~ value={row.groupingValue}
+                ~ depth={row.depth}
+                ~ rowCount={row.getLeafRows().filter((child) => !child.getIsGrouped()).length}
+                ~ columnCount={leafColumns.length}
+                ~ expanded={row.getIsExpanded()}
+                ~ cellSelectionEnabled={canSelectCells}
+                ~ onToggle={row.getToggleExpandedHandler()}
+                ~ )
+            else
+              HyperRow(
+                ~ className={rowClassName}
+                ~ row={row}
+                ~ isActive={false}
+                ~ isEditing={false}
+                ~ isPinned={false}
 
-  footer(className='flex min-h-[50px] items-center justify-between gap-5 border-t border-btable-sidebar-border bg-btable-surface p-3 md:p-0 text-xs')
+                ~ isSelected={row.getIsSelected()}
+                ~ showSelectColumn={showSelectColumn}
+                ~ selectColumnId={selectColumnId}
+                ~ columnPinning={tableColumnPinning}
+                ~ columnVisibility={tableColumnVisibility}
+                ~ pinnedColumnLayouts={pinnedColumnLayouts}
+                ~ getCellInteraction={canSelectCells ? (cell: HyperCellModel) => getCellInteraction(row.id, cell) : undefined}
+                ~ )
+
+  footer(className='flex flex-wrap min-h-[50px] items-center justify-between gap-x-5 gap-y-2 border-t border-btable-sidebar-border bg-btable-surface p-3 md:p-0 text-xs')
     div(className='flex items-center gap-4')
       SelectOctane(
         ~ className='text-xs'
@@ -421,7 +931,19 @@ section(className='relative overflow-hidden rounded-xs md:bg-btable-surface')
         ~ )
       Popper(condition={isQuerying && !isSearchExpanded} lead={queryLabel} value={queryPercent.toFixed(0)} trail='%' role='status' className='text-orange-500 justify-end')
       Popper(condition={queryState.phase === 'error' && !isSearchExpanded} lead='error' trail='index interrupted')
-      span(className='hidden sm:flex uppercase font-mono text-btable-active text-xs whitespace-nowrap') SHOWING #{visibleRows.length.toLocaleString()} ROWS
+      span(className='hidden sm:flex uppercase font-mono text-btable-active text-xs whitespace-nowrap')
+        | SHOWING #{visibleDataRows.length.toLocaleString()} ROWS
+        if grouping.length > 0
+          span #{` · ${(visibleRows.length - visibleDataRows.length).toLocaleString()} GROUPS`}
+    if selectedCellStatistics
+      div(className='table-selection-summary' role='status' aria-label='Selected cell statistics' aria-live='polite' aria-atomic={true})
+        span #{`${selectedCellStatistics.count} ${selectedCellStatistics.count === 1 ? 'number' : 'numbers'}`}
+        span
+          | Sum #{' '}
+          strong #{CELL_STATISTICS_FORMAT.format(selectedCellStatistics.sum)}
+        span
+          | Average #{' '}
+          strong #{CELL_STATISTICS_FORMAT.format(selectedCellStatistics.average)}
     div(className='flex items-center gap-4 md:gap-8')
       p(className='m-0 font-normal text-btable-muted-foreground/80') #{tablePagination.pageIndex + 1} / #{Math.max(1, table.getPageCount()).toLocaleString()}
       div(className='flex items-center overflow-hidden h-9.5 rounded-sm divide-x divide-btable-border')

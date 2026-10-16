@@ -1,4 +1,5 @@
 import Checkbox from '../../checkbox.btsx'
+import { createElement } from 'octane'
 import { cn } from '../../../lib/utils.ts'
 import type { ColumnPinningState, ColumnVisibilityState } from '@octanejs/tanstack-table'
 import { TableCell, TableRow } from '../index.ts'
@@ -6,7 +7,8 @@ import { orderCellsByColumnPinning } from './column-pinning.ts'
 import type { PinnedColumnLayout } from './column-pinning.ts'
 import HyperCell from './HyperCell.btsx'
 import type { RowDropPosition } from './reorder.ts'
-import type { HyperRowModel } from './table-contract.ts'
+import type { HyperCellModel, HyperRowModel } from './table-contract.ts'
+import type { CellInteraction } from './cell-interaction.ts'
 import { DEFAULT_SELECT_COLUMN_ID } from './selection.ts'
 import { isColumnVisible } from './visibility.ts'
 
@@ -26,6 +28,7 @@ module
     /** Column carrying the row checkbox. Only consulted when `showSelectColumn`. */
     selectColumnId?: string
     showSelectColumn: boolean
+    getCellInteraction?: (cell: HyperCellModel) => CellInteraction | undefined
     onDragOver?: (event: DragEvent, rowId: string) => void
     onDrop?: (event: DragEvent, rowId: string) => void
   }
@@ -40,16 +43,14 @@ module
   }
 
   // A click that lands on a control belongs to that control, not to row selection.
-  const INTERACTIVE_TARGET_SELECTOR =
-    'button, input, select, textarea, a, form, label, [role="button"], [role="menuitem"]'
-
+  const INTERACTIVE_TARGET_SELECTOR = 'button, input, select, textarea, a, form, label, [role="button"], [role="checkbox"], [role="menuitem"]'
   const ROW_CLASS = 'group/row h-8 font-mono text-btable-foreground/94 text-sm uppercase active:bg-btable-background/20 dark:hover:bg-btable-sidebar'
   const ROW_HIGHLIGHTED_CLASS = 'dark:bg-blue-200/50'
-  const ROW_SELECTED_CLASS = 'bg-btable-active hover:bg-btable-brand/15 dark:bg-btable-brand/20'
+  const ROW_SELECTED_CLASS = 'bg-emerald-200 hover:bg-emerald-100 dark:bg-btable-border dark:hover:bg-btable-border/50'
   const ROW_PINNED_CLASS = 'bg-sky-300/20 hover:bg-btable-brand/10 dark:bg-btable-background/20 dark:hover:bg-btable-background/30'
   const ROW_SELECTABLE_CLASS = 'cursor-pointer'
   const ROW_DRAGGING_CLASS = 'relative z-10'
-  const SELECT_CELL_CLASS = 'border-r border-btable-sidebar-border'
+  const SELECT_CELL_CLASS = 'border-r border-btable-sidebar-border text-foreground'
 
   const ROW_DROP_CLASSES = {
     before: 'border-t-2 border-t-primary',
@@ -80,20 +81,24 @@ module
     return className
   }
 
-props { className, row, columnPinning, columnVisibility, dropPosition = null, isActive, isDragging = false, isEditing, isPinned, isSelected, pinnedColumnLayouts, selectColumnId = DEFAULT_SELECT_COLUMN_ID, showSelectColumn, onDragOver, onDrop }: HyperRowProps
+props { className, row, columnPinning, columnVisibility, dropPosition = null, isActive, isDragging = false, isEditing, isPinned, isSelected, pinnedColumnLayouts, selectColumnId = DEFAULT_SELECT_COLUMN_ID, showSelectColumn, getCellInteraction, onDragOver, onDrop }: HyperRowProps
 
 setup
   const isHighlighted = isEditing || isActive
-  const canSelect = showSelectColumn && row.getCanSelect()
-  // Every cell in the row carries the row's emphasis, so resolve it once here
-  // instead of re-deriving the same boolean inside the cell loop.
-  const isEmphasized = isSelected || showSelectColumn || isHighlighted
+  const canSelect = showSelectColumn && row.getCanSelect() && !getCellInteraction
   const cells = orderCellsByColumnPinning(row.getAllCells(), columnPinning)
   const rowClassName = getRowClassName({ canSelect, dropPosition, isDragging, isHighlighted, isPinned, isSelected })
+  const selectionControl = showSelectColumn && selectColumnId !== DEFAULT_SELECT_COLUMN_ID
+    ? createElement(Checkbox, {
+      'aria-label': `Select ${row.id}`,
+      checked: isSelected,
+      onCheckedChange: (checked: boolean) => row.toggleSelected(checked),
+    })
+    : undefined
 
   const handleRowClick = (event: MouseEvent) => {
     const target = event.target
-    if (target instanceof HTMLElement && target.closest(INTERACTIVE_TARGET_SELECTOR)) return
+    if (target instanceof Element && target.closest(INTERACTIVE_TARGET_SELECTOR)) return
     if (canSelect) row.toggleSelected()
   }
 
@@ -102,6 +107,8 @@ setup
 
 TableRow(
   ~ data-state={isSelected ? 'selected' : undefined}
+  ~ data-row-id={row.id}
+  ~ aria-selected={showSelectColumn ? isSelected : undefined}
   ~ data-drop-position={dropPosition ?? undefined}
   ~ data-reorder-row-id={row.id}
   ~ className={cn(rowClassName, className)}
@@ -110,8 +117,8 @@ TableRow(
   ~ onDrop={handleDrop}
   ~ )
   each cell in cells key cell.id
-    if showSelectColumn && cell.column.id === selectColumnId
-      TableCell(className={SELECT_CELL_CLASS})
+    if showSelectColumn && selectColumnId === DEFAULT_SELECT_COLUMN_ID && cell.column.id === selectColumnId
+      TableCell(className={SELECT_CELL_CLASS} data-row-selection-handle={true})
         Checkbox(
           ~ aria-label={`Select ${row.id}`}
           ~ checked={row.getIsSelected()}
@@ -120,7 +127,8 @@ TableRow(
     else
       HyperCell(
         ~ cell={cell}
-        ~ isEmphasized={isEmphasized}
         ~ isVisible={isColumnVisible(cell.column.id, columnVisibility, cell.column.getCanHide?.() ?? true)}
         ~ pinnedColumnLayout={pinnedColumnLayouts.get(cell.column.id)}
+        ~ selectionControl={cell.column.id === selectColumnId ? selectionControl : undefined}
+        ~ interaction={getCellInteraction?.(cell)}
         ~ )

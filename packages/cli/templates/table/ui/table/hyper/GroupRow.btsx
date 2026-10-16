@@ -1,0 +1,35 @@
+import { Icon } from '../../../lib/icons/index.ts'
+import { getGroupValueLabel } from './column-grouping.ts'
+import './column-grouping.css'
+
+module
+  interface GroupRowProps {
+    rowId: string
+    columnLabel: string
+    value: unknown
+    depth: number
+    rowCount: number
+    columnCount: number
+    expanded: boolean
+    onToggle: () => void
+    cellSelectionEnabled?: boolean
+  }
+
+props { rowId, columnLabel, value, depth, rowCount, columnCount, expanded, onToggle, cellSelectionEnabled = false }: GroupRowProps
+setup
+  const valueLabel = getGroupValueLabel(value)
+
+tr(data-group-row={rowId} className='table-group-row' onClick={onToggle})
+  td(colspan={Math.max(1, columnCount)} role={cellSelectionEnabled ? 'gridcell' : undefined})
+    div(className='table-group-content')
+      button(
+        ~ type='button'
+        ~ className='table-group-toggle'
+        ~ style={{ paddingInlineStart: `${16 + depth * 20}px` }}
+        ~ aria-expanded={expanded}
+        ~ aria-label={`${expanded ? 'Collapse' : 'Expand'} ${columnLabel}: ${valueLabel}, ${rowCount} ${rowCount === 1 ? 'row' : 'rows'}`}
+        ~ )
+        Icon(name='chevron-right' className={expanded ? 'size-4 shrink-0 rotate-90' : 'size-4 shrink-0'})
+        span(className='table-group-column') #{columnLabel}:
+        span(className='table-group-value' title={valueLabel}) #{valueLabel}
+        span(className='table-group-count') #{rowCount.toLocaleString()} #{rowCount === 1 ? 'row' : 'rows'}

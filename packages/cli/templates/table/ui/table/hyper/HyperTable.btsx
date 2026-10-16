@@ -14,11 +14,14 @@ import { isColumnVisible } from './visibility.ts'
 module
   export interface HyperTableProps {
     children?: OctaneNode
+    cellSelectionEnabled?: boolean
+    cellInstructionsId?: string
     columnPinning: ColumnPinningState
     columnVisibility: ColumnVisibilityState
     loading?: boolean
     onSelectAllChange?: (checked: boolean) => void
     selectAllChecked?: boolean
+    selectAllIndeterminate?: boolean
     /** Column carrying the select-all checkbox. */
     selectColumnId?: string
     table: HyperTableModel
@@ -46,13 +49,14 @@ module
     onSelectAllChange?: (checked: boolean) => void
     pinnedColumnLayout?: PinnedColumnLayout
     selectAllChecked: boolean
+    selectAllIndeterminate: boolean
     selectColumnId: string
     sorting: SortingState
   }
 
   const COLUMN_DEFINITION_CLASS = 'transition-[width] duration-200 ease-out motion-reduce:transition-none'
 
-  const HEAD_CLASS = 'mx-2 h-9 overflow-hidden font-mono font-normal text-sm md:text-sm md:h-10 -tracking-[0.015em]'
+  const HEAD_CLASS = 'h-10 mx-2 overflow-hidden font-mono font-normal text-sm md:text-sm -tracking-[0.015em]'
   const HEAD_PINNED_CLASS = 'sticky z-30 bg-btable-sidebar transition-[inset-inline-start,inset-inline-end] duration-200 ease-out motion-reduce:transition-none'
   const HEAD_HIDDEN_CLASS = 'pointer-events-none'
   const HIDDEN_HEAD_CLASS = 'h-8 pointer-events-none opacity-0 md:h-9'
@@ -68,7 +72,7 @@ module
     hidden: cn(HEAD_CONTENT_CLASS, 'opacity-0 delay-0')
   }
 
-  const RESIZE_HANDLE_CLASS = `absolute right-0 top-0 z-100 h-full w-1 mt-0.5 touch-none rounded-full border-0 bg-transparent outline-none hover:bg-btable-active/0 p-0 after:absolute after:right-0 after:top-0 after:h-[36px] after:w-1 after:rounded-full after:bg-btable-brand/0 after:content-[''] hover:after:w-1 hover:after:bg-btable-active hover:after:cursor-col-resize`
+  const RESIZE_HANDLE_CLASS = `absolute right-0 top-0 z-100 h-full w-1 touch-none rounded-s-full rounded-e-[2px] border-0 bg-transparent outline-none hover:bg-btable-active/0 p-0 after:absolute after:right-0 after:top-0 after:h-[49px] after:w-1 after:rounded-s-full after:bg-active/20 after:content-[''] hover:after:w-1 hover:after:bg-btable-active/25 hover:after:cursor-col-resize`
   const RESIZE_HANDLE_CLASSES = {
     idle: cn(RESIZE_HANDLE_CLASS),
     resizing: cn(RESIZE_HANDLE_CLASS, 'bg-btable-active/10')
@@ -106,7 +110,7 @@ component ColumnDefinition
     ~ )
 
 component HeaderCell
-  props { columnVisibility, header, onSelectAllChange, pinnedColumnLayout, selectAllChecked, selectColumnId, sorting }: HeaderCellProps
+  props { columnVisibility, header, onSelectAllChange, pinnedColumnLayout, selectAllChecked, selectAllIndeterminate, selectColumnId, sorting }: HeaderCellProps
   setup
     const isVisible = header.column
       .getLeafColumns()
@@ -133,22 +137,34 @@ component HeaderCell
     ~ )
     div(className={contentClassName})
       if header.column.id === selectColumnId && onSelectAllChange
-        Checkbox(
-          ~ aria-label='Select all rows on this page'
-          ~ checked={selectAllChecked}
-          ~ onCheckedChange={onSelectAllChange}
-          ~ )
+        if selectColumnId === DEFAULT_SELECT_COLUMN_ID
+          Checkbox(
+            ~ aria-label='Select all rows on this page'
+            ~ checked={selectAllChecked}
+            ~ indeterminate={selectAllIndeterminate}
+            ~ onCheckedChange={onSelectAllChange}
+            ~ )
+        else
+          fragment
+            span(className='table-selection-control shrink-0')
+              Checkbox(
+                ~ aria-label='Select all rows on this page'
+                ~ checked={selectAllChecked}
+                ~ indeterminate={selectAllIndeterminate}
+                ~ onCheckedChange={onSelectAllChange}
+                ~ )
+            ColumnSort(header={header} sorted={sorted})
       else
         ColumnSort(header={header} sorted={sorted})
-      if header.column.getCanResize()
-        button(
-          ~ type='button'
-          ~ aria-label={`Resize ${header.column.id} column`}
-          ~ className={header.column.getIsResizing() ? RESIZE_HANDLE_CLASSES.resizing : RESIZE_HANDLE_CLASSES.idle}
-          ~ onMouseDown={header.getResizeHandler()}
-          ~ onTouchStart={header.getResizeHandler()}
-          ~ onDoubleClick={() => header.column.resetSize()}
-          ~ )
+    if isVisible && header.column.getCanResize()
+      button(
+        ~ type='button'
+        ~ aria-label={`Resize ${header.column.id} column`}
+        ~ className={header.column.getIsResizing() ? RESIZE_HANDLE_CLASSES.resizing : RESIZE_HANDLE_CLASSES.idle}
+        ~ onMouseDown={header.getResizeHandler()}
+        ~ onTouchStart={header.getResizeHandler()}
+        ~ onDoubleClick={() => header.column.resetSize()}
+        ~ )
 
 component HiddenHeaderCell
   TableHead(
@@ -158,7 +174,7 @@ component HiddenHeaderCell
     ~ className={HIDDEN_HEAD_CLASS}
     ~ )
 
-props { children, columnPinning, columnVisibility, loading = false, onSelectAllChange, selectAllChecked = false, selectColumnId = DEFAULT_SELECT_COLUMN_ID, table, title }: HyperTableProps
+props { children, cellSelectionEnabled = false, cellInstructionsId, columnPinning, columnVisibility, loading = false, onSelectAllChange, selectAllChecked = false, selectAllIndeterminate = false, selectColumnId = DEFAULT_SELECT_COLUMN_ID, table, title }: HyperTableProps
 
 setup
   // `table.state.columnSizing` is listed deliberately: the closure reads sizes
@@ -198,6 +214,9 @@ setup
 
 table(
   ~ data-slot='table'
+  ~ role={cellSelectionEnabled ? 'grid' : undefined}
+  ~ aria-multiselectable={cellSelectionEnabled ? true : undefined}
+  ~ aria-describedby={cellSelectionEnabled ? cellInstructionsId : undefined}
   ~ aria-busy={loading}
   ~ aria-label={title ?? 'Data table'}
   ~ className='w-fit min-w-full table-fixed whitespace-nowrap caption-bottom text-sm transition-[width] duration-200 ease-out motion-reduce:transition-none md:min-w-4xl'
@@ -207,7 +226,7 @@ table(
     each column in layout.orderedLeafColumns key column.id
       ColumnDefinition(visible={layout.columnWidths.get(column.id)?.visible ?? false} width={layout.columnWidths.get(column.id)?.width ?? 0})
   TableHeader
-    TableRow(className='sticky top-0 z-20 h-7 md:h-8')
+    TableRow(className='sticky top-0 z-20')
       each slot in layout.headerSlots key slot.id
         if slot.kind === 'header'
           HeaderCell(
@@ -217,6 +236,7 @@ table(
             ~ pinnedColumnLayout={slot.pinnedColumnLayout}
             ~ selectColumnId={selectColumnId}
             ~ selectAllChecked={selectAllChecked}
+            ~ selectAllIndeterminate={selectAllIndeterminate}
             ~ onSelectAllChange={onSelectAllChange}
             ~ )
         else

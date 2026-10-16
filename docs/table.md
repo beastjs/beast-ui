@@ -7,7 +7,7 @@ bunx @beastjs/cli@0.3.2 table init
 # Equivalent shortcut: bunx @beastjs/cli@0.3.2 add table
 ```
 
-The CLI copies the complete feature into `src/components/table`, installs its npm dependencies with the project's package manager, and imports `table.css` into the Tailwind entry stylesheet. It includes the sheet panel, DataTable and its controls, worksheet selector, parser, 30 typed icons, and URL-state adapter. Source imports are relative, so no `@/` alias or `beast-ui.json` is required. The bundle is embedded in the CLI; it does not need the hosted component registry.
+The CLI copies the complete feature into `src/components/table`, installs its npm dependencies with the project's package manager, and imports `table.css` into the Tailwind entry stylesheet. It includes the sheet panel, the `NewDataTable` JSON workspace, DataTable and its controls, worksheet selector, parser, typed icons, and URL-state adapter. Source imports are relative, so no `@/` alias or `beast-ui.json` is required. The bundle is embedded in the CLI; it does not need the hosted component registry.
 
 Render it from `src/App.btsx`:
 
@@ -17,7 +17,25 @@ import Table from './components/table/table.btsx'
 Table
 ```
 
-The installer supports Octane 0.2.x, 0.3.x, 0.4.x, and 0.8.x. It selects pinned adapter releases with compatible peers and preserves the existing Octane runtime. Node 22.22.2 or newer is required by the CLI and bindings. The nuqs source uses `Promise.withResolvers`, so typechecking should include `ES2024` and Node types, as in the Beast templates. Configure the Beast bundler plugin before using this feature.
+For the JSON workspace based on the `plugins-playground` reference, supply an array of records and mount the URL-state adapter:
+
+```btsx
+import { NuqsAdapter } from '@octanejs/nuqs/adapters/react'
+import NewDataTable from './components/table/new-data-table.btsx'
+
+setup
+  const rows = [
+    { name: 'Ada', status: 'Active', amount: 125 },
+    { name: 'Ben', status: 'Pending', amount: 75 },
+  ]
+
+NuqsAdapter
+  NewDataTable(data={rows} name='Customers')
+```
+
+`NewDataTable` infers columns, editor types, and optional status badges from values. Its `columnOptions` prop accepts the `BuildColumnsOptions` type from `lib/sheet-columns.ts` to override or disable inference. Editing is local to the mounted component and leaves the supplied records untouched; replacing the data array starts a fresh editing session. Keep the array stable across unrelated parent renders. Give the component's parent an explicit height to fill a workspace, or use its minimum height. The existing `Table` entry opens the file-upload viewer; `SheetTablePanel` also accepts `data` and `name` for an initial JSON sheet.
+
+The installer supports Octane 0.2.x, 0.3.x, 0.4.x, 0.8.x, and 0.12.x. It selects pinned adapter releases with compatible peers and preserves the existing Octane runtime. Node 22.22.2 or newer is required by the CLI and bindings. The nuqs source uses `Promise.withResolvers`, so typechecking should include `ES2024` and Node types, as in the Beast templates. Configure the Beast bundler plugin before using this feature.
 
 ## Options
 
@@ -35,6 +53,8 @@ bunx @beastjs/cli@0.3.2 table init --package-manager npm
 - CSV, TSV, Excel (`xls`, `xlsx`, `xlsm`, `xlsb`, `ods`), Markdown tables, pipe/semicolon-delimited text, and line lists.
 - All workbook tabs, with a mobile worksheet selector.
 - Search, faceted filters, alphanumeric sorting, pagination, column visibility, pinning, resizing, and drag ordering.
+- Column grouping with expandable groups, row selection with drag ranges, and cell selection with numeric summaries.
+- The JSON workspace supports keyboard cell editing, inferred text/number/date/select editors, status badges, and undo/redo. Edits are kept in memory and are not persisted to a server.
 - File parsing in the browser. Google Sheets import downloads a public workbook directly from Google and depends on its sharing, download, and cross-origin permissions. Upload an Excel copy if the browser blocks export.
 - A 10 MB input limit, up to 500 displayed columns, and the first 5,000 data rows, with the total and truncation notice retained.
 - Table URL keys use `sheet-`. A new dataset or worksheet clears that namespace, including persisted widths. Local file contents are not saved in the URL or persisted after reload. Mount one viewer per route.
@@ -52,7 +72,7 @@ Edit authored sources in `packages/cli/templates/table`, then run:
 
 ```bash
 bun scripts/build-cli-table-assets.ts
-bun test tests/table-init.test.ts
+bun test tests/table-*.test.ts
 bun run --cwd packages/cli build
 ```
 

@@ -1,0 +1,337 @@
+/* The reference presentation is local to NewDataTable. */
+
+.reference-table-page {
+  --reference-canvas: light-dark(#ededed, #101012);
+  --reference-surface: light-dark(#fff, #18181b);
+  --reference-workspace: light-dark(#fbfbfb, #18181b);
+  --reference-border: light-dark(#e3e3e3, #303038);
+  --reference-rule: light-dark(#ececec, #303038);
+  --reference-header: light-dark(#f5f5f8, #222226);
+  --reference-sidebar: light-dark(#f7f7f7, #222226);
+  --reference-ink: light-dark(#252525, #e4e4e7);
+  --reference-text: light-dark(#616161, #c4c4cc);
+  --reference-muted: light-dark(#858585, #a1a1aa);
+  --reference-hover: light-dark(#f4f4f7, #27272e);
+  --reference-selected: light-dark(#f5f6f7, #30303a);
+  --reference-selected-ink: light-dark(#aaa, #c4c4cc);
+  min-height: 32rem;
+  height: 100%;
+  /*padding: 28px clamp(20px, 5vw, 76px);*/
+  background: var(--reference-canvas);
+  color: var(--reference-ink);
+  color-scheme: light;
+  /*font-family: 'Geist', Helvetica, sans-serif;*/
+  -webkit-font-smoothing: antialiased;
+}
+
+.dark .reference-table-page,
+.reference-table-page.dark {
+  color-scheme: dark;
+}
+
+.reference-table-frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--reference-border);
+  border-radius: 10px;
+  background: var(--reference-surface);
+  box-shadow: 0 1px 2px #00000005;
+}
+
+.reference-workspace {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 20px;
+  border-left: 0;
+  background: var(--reference-workspace);
+}
+
+.reference-activity-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  flex: 0 0 94px;
+  overflow: hidden;
+  border: 1px solid var(--reference-rule);
+  border-top: 0;
+  border-radius: 0 0 0px 17px;
+  background: var(--reference-surface);
+}
+
+.reference-activity-bar {
+  flex: 1 0 5px;
+  border-radius: 5px 0px 0 0;
+  background: var(--reference-rule);
+}
+
+.reference-activity-bar--amber {
+  background: #efc153;
+}
+.reference-activity-bar--red {
+  background: #ff101b;
+}
+
+.reference-data-table {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  margin-top: 20px;
+  --btable-background: var(--reference-surface);
+  --btable-foreground: var(--reference-ink);
+  --btable-surface: var(--reference-surface);
+  --btable-table-head: var(--reference-header);
+  --btable-sidebar: var(--reference-sidebar);
+  --btable-sidebar-border: var(--reference-rule);
+  --btable-border: var(--reference-rule);
+  --btable-muted-foreground: var(--reference-muted);
+  --btable-input: var(--reference-border);
+  --btable-primary: light-dark(#282828, #e4e4e7);
+  --btable-primary-foreground: light-dark(#fff, #18181b);
+  --btable-ring: light-dark(#939393, #a1a1aa);
+  --btable-active: var(--reference-ink);
+  --btable-brand: var(--reference-ink);
+}
+
+.reference-data-table > section {
+  position: static;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Keep query controls above the scroll viewport as more tools are added. */
+.reference-data-table .table-toolbar {
+  position: relative;
+  flex-shrink: 0;
+  gap: 8px;
+  height: auto;
+  min-height: 40px;
+  padding: 0 0 8px;
+  background: transparent;
+}
+
+.reference-sheet-summary {
+  margin: 0;
+  color: var(--reference-muted);
+  font-size: 13px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.reference-data-table .table-search-input {
+  height: 32px;
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--reference-rule);
+  border-radius: 4px;
+  background: var(--reference-workspace);
+  font-family: inherit;
+  font-size: 12px;
+  text-transform: none;
+}
+
+.reference-table-viewport {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1.5px solid var(--reference-border);
+  border-radius: 10px 3px 0 0;
+  box-shadow:
+    0 1px 1.75px rgb(24 24 27 / 4%),
+    0 1px 1px rgb(24 24 27 / 2%);
+  /*box-shadow: 0 24px 48px -32px rgb(24 24 27 / 22%);*/
+  background: var(--reference-surface);
+  scrollbar-width: thin;
+  scrollbar-color: var(--reference-border) var(--reference-surface);
+}
+
+.reference-data-table table {
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 18px;
+  line-height: 24px;
+  letter-spacing: -0.55px;
+}
+
+.reference-data-table th {
+  height: 50px;
+  padding: 0 20px;
+  border-right: 1px solid var(--reference-rule);
+  border-bottom: 1px solid var(--reference-rule);
+  background: var(--reference-header);
+  background-image: none;
+  color: var(--reference-ink);
+  font-family: inherit;
+  font-size: 17.5px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: -0.028em;
+  backdrop-filter: none;
+}
+
+.reference-data-table th > div {
+  gap: 11px;
+}
+.reference-data-table th button > span {
+  overflow: visible;
+}
+.reference-data-table th button > svg {
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.reference-data-table th:hover button > svg,
+.reference-data-table th[aria-sort='ascending'] button > svg,
+.reference-data-table th[aria-sort='descending'] button > svg {
+  opacity: 1;
+}
+
+.reference-column-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0;
+}
+
+.reference-column-label > svg {
+  flex-shrink: 0;
+  color: var(--reference-muted);
+}
+
+/* Presentation defaults sit below HyperRow's Tailwind utilities. */
+@layer components {
+  .reference-data-table tbody tr {
+    height: 57px;
+    background: var(--reference-surface);
+    color: var(--reference-text);
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 450;
+    text-transform: none;
+  }
+}
+
+.reference-data-table td {
+  padding: 0;
+  border-right: 1px solid var(--reference-rule);
+  border-bottom: 1px solid var(--reference-rule);
+  border-left: 0;
+  background: inherit;
+}
+
+.reference-data-table td:not([data-column-pinned]) {
+  position: relative;
+}
+
+.reference-data-table td > div {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 100%;
+  padding: 16px 20px;
+}
+
+.reference-data-table td > div > .table-cell-content {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reference-data-table tbody tr[data-state='selected'] td:first-child::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  /* Disable diagonal antialiasing while retaining the adjusted stripe geometry. */
+  background: #fafafa05 url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%226%22%20height%3D%226.92820323%22%20viewBox%3D%220%200%206%206.92820323%22%20shape-rendering%3D%22crispEdges%22%3E%0A%20%20%3C%21--%2030deg%20bands%3A%202.5px%20amber%20%2B%203.5px%20white%2C%20measured%20perpendicular%20to%20the%20diagonal.%20--%3E%0A%20%20%3Crect%20width%3D%226%22%20height%3D%226.92820323%22%20fill%3D%22%23a4a4a420%22%2F%3E%0A%20%20%3Cpath%20d%3D%22M0%20.288675135%206%203.75277675V6.6395281L0%203.17542648Z%22%20fill%3D%22%23e79800%22%2F%3E%0A%3C%2Fsvg%3E%0A") left top / 6px 5.8px repeat-y;
+  content: '';
+}
+
+.reference-data-table [data-slot='checkbox'] {
+  border-color: var(--reference-rule);
+  background: var(--reference-surface);
+  color: var(--btable-primary-foreground);
+  box-shadow: 0 0 1px #00000048;
+}
+
+.reference-data-table [data-slot='checkbox']:is([data-checked], [data-indeterminate]) {
+  border-color: var(--btable-primary);
+  background: var(--btable-primary);
+  color: var(--btable-primary-foreground);
+}
+
+.reference-data-table > section > footer {
+  flex-shrink: 0;
+  min-height: 38px;
+  padding: 3px 0;
+  border-top: 0;
+  background: transparent;
+  color: var(--reference-muted);
+}
+
+.reference-data-table > section > footer span,
+.reference-data-table > section > footer p {
+  color: var(--reference-muted);
+  font-family: inherit;
+  font-size: 11px;
+  text-transform: none;
+}
+
+.reference-data-table > section > footer button {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+@media (max-width: 760px) {
+  .reference-table-page {
+    padding: 1px;
+  }
+  .reference-table-frame {
+    grid-template-columns: minmax(0, 1fr);
+    border-radius: 18px;
+  }
+  .reference-table-frame > .reference-sidebar {
+    display: none;
+  }
+  .reference-workspace {
+    padding: 0px;
+    border-left: 0;
+  }
+  .reference-data-table {
+    margin-top: 0px;
+  }
+  .reference-data-table .table-toolbar {
+    right: 0px;
+    left: 0px;
+  }
+  .reference-data-table .table-search-input {
+    width: 100%;
+  }
+  .reference-data-table table,
+  .reference-data-table th {
+    font-size: 16px;
+  }
+  .reference-data-table th {
+    padding: 0px;
+  }
+  .reference-data-table td > div {
+    padding: 16px;
+  }
+  .reference-data-table > section > footer {
+    gap: 8px;
+  }
+  .reference-data-table > section > footer > div {
+    gap: 8px;
+  }
+}

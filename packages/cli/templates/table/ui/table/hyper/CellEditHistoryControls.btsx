@@ -1,0 +1,46 @@
+import { Button as BaseButton } from '@octanejs/base-ui/button'
+import { cn } from '../../../lib/utils.ts'
+import Icon from "../../../lib/icons/Icon.btsx";
+
+module
+  export interface CellEditHistoryControlsProps {
+    disabled?: boolean
+    canUndo: boolean
+    canRedo: boolean
+    onUndo: VoidFunction
+    onRedo: VoidFunction
+  }
+
+  const BUTTON_CLASS = cn(
+    'relative h-8 flex items-center justify-center rounded-[4px]',
+    'select-none text-btable-foreground text-sm w-9 shrink-0',
+    'border-[1.25px] border-btable-border/50 dark:border-zinc-200/2 hover:border-zinc-400',
+    'bg-zinc-200/20 dark:bg-zinc-200/8 hover:bg-zinc-200/20 dark:hover:bg-btable-muted-foreground/5',
+    'data-pressed:bg-zinc-200/40 data-pressed:border-zinc-400 dark:data-pressed:bg-zinc-900/80 dark:data-pressed:border-zinc-200/10',
+    'active:bg-zinc-300 dark:active:bg-zinc-700/40 transition-colors duration-100',
+    'focus-visible:bg-none focus-visible:-outline-offset-1 focus-visible:outline-1',
+    'disabled:cursor-not-allowed disabled:opacity-40',
+  )
+props { disabled = false, canUndo, canRedo, onUndo, onRedo }: CellEditHistoryControlsProps
+
+div(role='group' aria-label='Cell editing controls' className='flex items-center gap-1')
+  BaseButton(
+    ~ type='button'
+    ~ aria-label='Undo cell edit'
+    ~ aria-keyshortcuts='Meta+Z Control+Z'
+    ~ disabled={disabled || !canUndo}
+    ~ title='Undo cell edit (Cmd/Ctrl+Z)'
+    ~ onClick={onUndo}
+    ~ className={BUTTON_CLASS}
+    ~ )
+    Icon(name='undo' size={12})
+  BaseButton(
+    ~ type='button'
+    ~ aria-label='Redo cell edit'
+    ~ aria-keyshortcuts='Meta+Shift+Z Control+Shift+Z'
+    ~ disabled={disabled || !canRedo}
+    ~ title='Redo cell edit (Cmd/Ctrl+Shift+Z)'
+    ~ onClick={onRedo}
+    ~ className={BUTTON_CLASS}
+    ~ )
+    Icon(name='redo' size={12})

@@ -1,6 +1,7 @@
 import {
   columnFacetingFeature,
   columnFilteringFeature,
+  columnGroupingFeature,
   columnOrderingFeature,
   columnPinningFeature,
   columnResizingFeature,
@@ -9,6 +10,8 @@ import {
   createFacetedRowModel,
   createFacetedUniqueValues,
   createFilteredRowModel,
+  createGroupedRowModel,
+  createExpandedRowModel,
   createPaginatedRowModel,
   createSortedRowModel,
   filterFn_arrHas,
@@ -16,15 +19,19 @@ import {
   filterFn_inDateRange,
   filterFn_inNumberRange,
   globalFilteringFeature,
+  metaHelper,
   rowPaginationFeature,
+  rowExpandingFeature,
   rowSelectionFeature,
   rowSortingFeature,
   sortFn_basic,
   sortFn_text,
   tableFeatures
 } from '@octanejs/tanstack-table'
+import type { DataTableColumnMeta } from './cell-editor.ts'
 
 export const features = tableFeatures({
+  columnMeta: metaHelper<MyColumnMeta>(),
   columnFilteringFeature,
   globalFilteringFeature,
   // Faceting powers the filter list's option counts (`getFacetedUniqueValues`).
@@ -41,6 +48,10 @@ export const features = tableFeatures({
   rowSortingFeature,
   sortedRowModel: createSortedRowModel(),
   sortFns: { basic: sortFn_basic, text: sortFn_text },
+  columnGroupingFeature,
+  groupedRowModel: createGroupedRowModel(),
+  rowExpandingFeature,
+  expandedRowModel: createExpandedRowModel(),
   rowPaginationFeature,
   paginatedRowModel: createPaginatedRowModel(),
   rowSelectionFeature,
@@ -51,7 +62,7 @@ export const features = tableFeatures({
   columnResizingFeature
 })
 
-export interface MyColumnMeta {
+export interface MyColumnMeta extends DataTableColumnMeta {
   label?: string
   variant?: 'text' | 'number' | 'date' | 'boolean' | 'select' | 'multi-select'
   options?: Array<{ label: string; value: string; count?: number }>

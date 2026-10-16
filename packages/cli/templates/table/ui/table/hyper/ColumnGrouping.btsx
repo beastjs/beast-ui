@@ -1,0 +1,72 @@
+import Popover, { PopoverContent, PopoverDescription, PopoverTitle, PopoverTrigger } from '../../Popover.btsx'
+import { Icon } from '../../../lib/icons/index.ts'
+import { cn } from '../../../lib/utils.ts'
+import { getColumnHeaderText } from './filter-utils.ts'
+import { MAX_GROUPING_COLUMNS, moveGroupingColumn } from './column-grouping.ts'
+import type { GroupingState } from '@octanejs/tanstack-table'
+import type { LabelledColumn } from './table-contract.ts'
+
+module
+  interface ColumnGroupingProps {
+    columns: LabelledColumn[]
+    grouping: GroupingState
+    onChange: (grouping: GroupingState) => void
+    onExpandAll: () => void
+    onCollapseAll: () => void
+  }
+
+  const TRIGGER_CLASS = 'relative flex h-8 w-9 items-center justify-center md:space-x-1 gap-1.5 rounded-[4px] border border-btable-border/50 bg-zinc-200/10 hover:bg-pink-200/20 text-btable-foreground hover:border-pink-400 focus-visible:outline-1 disabled:opacity-40 md:w-auto md:px-2'
+  const ACTION_CLASS = 'rounded px-2 py-1 text-xs hover:bg-btable-border/30 focus-visible:outline-1 disabled:opacity-40'
+
+props { columns, grouping, onChange, onExpandAll, onCollapseAll }: ColumnGroupingProps
+
+setup
+  const selectedColumns = grouping.flatMap((id) => {
+    const column = columns.find((column) => column.id === id)
+    return column ? [column] : []
+  })
+  const availableColumns = columns.filter((column) => !grouping.includes(column.id))
+
+Popover
+  PopoverTrigger(
+    ~ type='button'
+    ~ aria-label={grouping.length > 0 ? `Group rows, ${grouping.length} ${grouping.length === 1 ? 'column' : 'columns'} selected` : 'Group rows'}
+    ~ title='Group rows by column values'
+    ~ disabled={columns.length === 0}
+    ~ className={cn(TRIGGER_CLASS, grouping.length > 0 && 'border-zinc-800 bg-zinc-800 hover:border-zinc-800 hover:bg-zinc-800/90 data-pressed:border-zinc-800 data-pressed:bg-zinc-700 text-white dark:border-pink-100/10 ps-1.5! pe-2 gap-1')}
+    ~ )
+    if grouping.length > 0
+      span(className='bg-pink-500 min-w-5 rounded-xs px-1 font-sans font-semibold text-white text-xs') #{grouping.length}
+    else
+      Icon(name='rows' className='size-4 opacity-80')
+    span(className='hidden font-mono text-xs uppercase opacity-70 md:inline') Group
+  PopoverContent(align='start' sideOffset={7} className='gap-2 rounded-md p-0')
+    PopoverTitle(className='text-sm px-3 pt-3') Group Rows
+    PopoverDescription(className='text-xs px-3') Select columns in order to create nested groups.
+    if selectedColumns.length > 0
+      ol(aria-label='Grouping order' className='border-b border-btable-border pb-0')
+        each column, index in selectedColumns key column.id
+          li(className='flex items-center gap-1 bg-btable-sidebar hover:bg-btable-border/40 px-1 py-1')
+            span(className='w-5 text-center text-xs text-btable-muted-foreground') #{index + 1}
+            span(className='min-w-0 flex-1 truncate text-sm' title={getColumnHeaderText(column)}) #{getColumnHeaderText(column)}
+            button(type='button' className={ACTION_CLASS} aria-label={`Move ${getColumnHeaderText(column)} group up`} disabled={index === 0} onClick={() => onChange(moveGroupingColumn(grouping, column.id, -1))}) ↑
+            button(type='button' className={ACTION_CLASS} aria-label={`Move ${getColumnHeaderText(column)} group down`} disabled={index === grouping.length - 1} onClick={() => onChange(moveGroupingColumn(grouping, column.id, 1))}) ↓
+            button(type='button' className={ACTION_CLASS} aria-label={`Remove ${getColumnHeaderText(column)} grouping`} onClick={() => onChange(grouping.filter((id) => id !== column.id))}) ×
+    div(className='max-h-60 overflow-y-auto')
+      each column in availableColumns key column.id
+        button(
+          ~ type='button'
+          ~ className='flex w-full items-center gap-2 px-2 py-2 text-left text-sm hover:bg-zinc-200/50 dark:hover:bg-zinc-100/5 focus-visible:outline-1 disabled:opacity-40'
+          ~ aria-label={`Group by ${getColumnHeaderText(column)}`}
+          ~ disabled={grouping.length >= MAX_GROUPING_COLUMNS}
+          ~ onClick={() => onChange([...grouping, column.id])}
+          ~ )
+          span(aria-hidden='true' className='text-btable-muted-foreground text-base') +
+          span(className='truncate') #{getColumnHeaderText(column)}
+    if grouping.length >= MAX_GROUPING_COLUMNS
+      p(className='text-xs text-btable-muted-foreground') Up to #{MAX_GROUPING_COLUMNS} grouping columns.
+    if grouping.length > 0
+      div(className='flex items-center justify-between border-t border-btable-border p-2')
+        button(type='button' className={ACTION_CLASS} onClick={onExpandAll}) Expand all
+        button(type='button' className={ACTION_CLASS} onClick={onCollapseAll}) Collapse all
+        button(type='button' className={ACTION_CLASS} onClick={() => onChange([])}) Clear

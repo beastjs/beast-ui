@@ -32,5 +32,9 @@ clickable, put it inside a `button` and give the button an `aria-label`.
 3. Commit the `.svg` and `src/icons.ts`.
 
 `bun test` fails when `src/icons.ts` does not match the files in `svg/`.
+Run `bun run icons:check` to check the generated file, or `bun run icons:unused`
+to list names not found in quoted strings across the repository. These commands
+work from the repository root or this package. Check names built at runtime
+before deleting any SVGs.
 [docs/icons.md](../../docs/icons.md#what-build-iconsts-does) explains what the
 build does to each file, and what its messages mean.

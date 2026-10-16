@@ -1,5 +1,5 @@
 /* Namespaced palette, available to the viewer and its portaled controls. */
-@import "tw-animate-css";
+@import 'tw-animate-css';
 @source "./";
 @theme inline {
   --color-btable-accent: var(--btable-accent);
@@ -28,7 +28,8 @@
   --color-btable-table-head: var(--btable-table-head);
 }
 
-:root, .beast-table {
+:root,
+.beast-table {
   --btable-accent: oklch(0.96 0 0);
   --btable-accent-foreground: oklch(0.2 0 0);
   --btable-active: oklch(0.55 0.2 265);
@@ -55,7 +56,9 @@
   --btable-table-head: oklch(0.96 0 0);
 }
 
-.dark, .dark .beast-table, .beast-table.dark {
+.dark,
+.dark .beast-table,
+.beast-table.dark {
   --btable-accent: oklch(0.22 0 0);
   --btable-accent-foreground: oklch(0.97 0 0);
   --btable-active: oklch(0.75 0.15 265);
@@ -68,7 +71,7 @@
   --btable-mist: oklch(0.22 0 0);
   --btable-muted: oklch(0.22 0 0);
   --btable-muted-foreground: oklch(0.72 0 0);
-  --btable-popover: oklch(0.145 0 0);
+  --btable-popover: oklch(0.15 0.002 286.14);
   --btable-popover-foreground: oklch(0.97 0 0);
   --btable-primary: oklch(0.92 0 0);
   --btable-primary-foreground: oklch(0.2 0 0);

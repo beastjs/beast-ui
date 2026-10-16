@@ -1,0 +1,84 @@
+import { useId } from 'octane'
+import Popover, { PopoverContent, PopoverDescription, PopoverTitle, PopoverTrigger } from '../../Popover.btsx'
+import Checkbox from '../../checkbox.btsx'
+import { Icon } from '../../../lib/icons/index.ts'
+import { cn } from '../../../lib/utils.ts'
+
+module
+  interface SelectionMenuProps {
+    showRows: boolean
+    showCells: boolean
+    rowsEnabled: boolean
+    cellsEnabled: boolean
+    selectedRowCount: number
+    selectedCellCount: number
+    disabled?: boolean
+    onToggleRows: VoidFunction
+    onToggleCells: VoidFunction
+  }
+
+  const TRIGGER_CLASS = cn(
+    'relative h-8 md:w-auto flex items-center justify-center rounded-[4px]',
+    'select-none text-btable-foreground text-sm md:space-x-1 md:px-2 gap-1 w-9',
+    'border-[1.25px] border-btable-border/50 dark:border-zinc-200/2 hover:border-btable-border',
+    'bg-zinc-200/20 dark:bg-zinc-200/8 hover:bg-btable-muted-foreground/5 dark:hover:bg-btable-muted-foreground/5',
+    'data-pressed:bg-emerald-200/40 data-pressed:border-emerald-400 dark:data-pressed:bg-zinc-900/80 dark:data-pressed:border-zinc-200/10',
+    'active:bg-zinc-300 dark:active:bg-zinc-700/40 transition-colors duration-100',
+    'focus-visible:-outline-offset-1 focus-visible:outline-1 disabled:cursor-not-allowed disabled:opacity-40',
+  )
+  const OPTION_CLASS = 'flex items-center gap-3 rounded px-2 py-2 hover:bg-btable-border/30'
+  const ROWS_ENABLED_CLASS = 'border-zinc-800 bg-zinc-800 hover:border-zinc-800 hover:bg-zinc-800/90 data-pressed:border-zinc-800 data-pressed:bg-zinc-700 text-white dark:border-emerald-300/15 dark:bg-emerald-100/5'
+  const CELLS_ENABLED_CLASS = 'border-[#007AFF]/40 bg-[#007AFF]/10 text-[#007AFF] hover:border-[#007AFF] hover:bg-[#007AFF]/15 data-pressed:border-[#007AFF] data-pressed:bg-[#007AFF]/20 dark:border-[#419ccf]/40 dark:bg-[#419ccf]/10 dark:text-[#419ccf] dark:hover:border-[#419ccf] dark:hover:bg-[#419ccf]/15 dark:data-pressed:border-[#419ccf] dark:data-pressed:bg-[#419ccf]/20'
+  const MULTI_SELECTED_CLASS = 'border-zinc-800 bg-zinc-800 text-white hover:border-zinc-800 hover:bg-zinc-800/90 data-pressed:border-zinc-800 data-pressed:bg-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-white dark:hover:border-zinc-800 dark:hover:bg-zinc-800/90 dark:data-pressed:border-zinc-800 dark:data-pressed:bg-zinc-700'
+  const ROWS_HOVER_CLASS = 'hover:border-emerald-400 dark:hover:border-emerald-400'
+  const CELLS_HOVER_CLASS = 'hover:border-[#007AFF] dark:hover:border-[#419ccf]'
+  const ROWS_EMPTY_HOVER_CLASS = 'hover:bg-emerald-200/20 dark:hover:bg-emerald-100/10'
+  const CELLS_EMPTY_HOVER_CLASS = 'hover:bg-[#007AFF]/15 dark:hover:bg-[#419ccf]/15'
+
+props { showRows, showCells, rowsEnabled, cellsEnabled, selectedRowCount, selectedCellCount, disabled = false, onToggleRows, onToggleCells }: SelectionMenuProps
+
+setup
+  const id = useId()
+  const selectedCount = (showRows ? selectedRowCount : 0) + (showCells ? selectedCellCount : 0)
+  const triggerLabel = showRows && rowsEnabled ? 'Rows' : showCells && cellsEnabled ? 'Cells' : 'Select'
+  const enabled = triggerLabel !== 'Select'
+  const cellsActive = triggerLabel === 'Cells'
+  const triggerClassName = cn(
+    TRIGGER_CLASS,
+    enabled && selectedCount > 0 && (cellsActive ? CELLS_ENABLED_CLASS : ROWS_ENABLED_CLASS),
+    selectedCount > 1 && MULTI_SELECTED_CLASS,
+    enabled && (cellsActive ? CELLS_HOVER_CLASS : ROWS_HOVER_CLASS),
+    enabled && selectedCount === 0 && (cellsActive ? CELLS_EMPTY_HOVER_CLASS : ROWS_EMPTY_HOVER_CLASS),
+    selectedCount > 0 && 'gap-0.5 md:ps-1.5 md:pe-2',
+  )
+
+Popover
+  PopoverTrigger(
+    ~ type='button'
+    ~ aria-label={triggerLabel}
+    ~ aria-describedby={`${id}-counts`}
+    ~ title='Choose row or cell selection'
+    ~ disabled={disabled}
+    ~ className={triggerClassName}
+    ~ )
+    if selectedCount > 0
+      span(aria-hidden={true} className={cn('min-w-5 rounded-xs px-1 font-sans font-semibold text-white text-xs', cellsActive ? 'bg-[#007AFF] dark:bg-[#419ccf]' : 'bg-emerald-400 dark:bg-emerald-500/80')}) #{selectedCount > 99 ? '99+' : selectedCount}
+    else
+      Icon(name='sheet' className='size-4 opacity-80')
+    span(className='hidden font-mono text-xs uppercase opacity-70 md:inline') #{triggerLabel}
+    span(id={`${id}-counts`} aria-live='polite' aria-atomic={true} className='sr-only') #{showRows ? `${selectedRowCount} selected rows` : ''} #{showCells ? `${selectedCellCount} selected cells` : ''}
+  PopoverContent(align='start' sideOffset={7} className='w-60 gap-2 rounded-md p-3')
+    PopoverTitle(className='text-sm') Select
+    PopoverDescription(className='text-xs') Choose Rows or Cells. Uncheck the active option to turn selection off.
+    if showRows
+      div(className={OPTION_CLASS})
+        Checkbox(id={`${id}-rows`} checked={rowsEnabled} onCheckedChange={onToggleRows})
+        label(htmlFor={`${id}-rows`} className='flex flex-1 cursor-pointer items-center justify-between gap-3')
+          span Rows
+          span(aria-hidden={true} className='text-xs text-btable-muted-foreground') #{selectedRowCount} selected
+    if showCells
+      div(className={OPTION_CLASS})
+        Checkbox(id={`${id}-cells`} checked={cellsEnabled} onCheckedChange={onToggleCells})
+        label(htmlFor={`${id}-cells`} className='flex flex-1 cursor-pointer items-center justify-between gap-3')
+          span Cells
+          span(aria-hidden={true} className='text-xs text-btable-muted-foreground') #{selectedCellCount} selected

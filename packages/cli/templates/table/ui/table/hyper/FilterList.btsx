@@ -34,8 +34,8 @@ module
   // inset, root page or drilled in.
   const ROW_CLASS: ClassValue =
     'relative flex md:h-9 h-10 cursor-default select-none items-center gap-2 rounded-[1px] ps-2 text-sm outline-hidden data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-btable-sidebar dark:data-[selected=true]:bg-indigo-100/8'
-  const LIST_CLASS: ClassValue = 'max-h-80 scroll-py-1 overflow-x-hidden overflow-y-auto bg-btable-surface/70'
-  const HEADER_CLASS: ClassValue = 'flex md:h-9 h-10 shrink-0 items-center gap-1.5 border-b border-btable-border/35 px-1 bg-btable-surface'
+  const LIST_CLASS: ClassValue = 'max-h-80 scroll-py-1 overflow-x-hidden overflow-y-auto bg-btable-popover'
+  const HEADER_CLASS: ClassValue = 'flex md:h-9 h-10 shrink-0 items-center gap-1.5 border-b border-btable-border/35 px-1 bg-btable-popover'
   const SEARCH_CLASS: ClassValue =
     'h-8 w-full min-w-0 bg-transparent font-mono text-xs -tracking-[0.02em] outline-hidden placeholder:select-none placeholder:text-btable-muted-foreground/80 px-1'
   const MUTED_ROW_LABEL_CLASS: ClassValue = 'truncate text-btable-muted-foreground'
@@ -97,8 +97,7 @@ component FacetedPanel
             ~ className='pointer-events-none'
             ~ )
           span(className='truncate') #{option.label}
-          span(className={cn('ml-auto mr-2 font-sans text-sm text-btable-foreground/35', { 'text-indigo-500/80 dark:text-indigo-300/80': option.count > 0 })})
-            | #{option.count}
+          span(className={cn('ml-auto mr-2 font-sans text-sm text-btable-foreground/35', { 'text-indigo-500/80 dark:text-indigo-300/80': option.count > 0 })}) #{option.count}
 
 component NumberRangePanel
   props { column, definition, rawFilterValue }: NumberRangePanelProps
@@ -253,7 +252,7 @@ Popover(open={open} onOpenChange={handleOpenChange})
     ~ aria-labelledby={labelId}
     ~ align='start'
     ~ sideOffset={7}
-    ~ className='w-76 gap-0 overflow-hidden rounded-sm border border-btable-border/80 bg-zinc-200 dark:bg-zinc-900/50 p-0! backdrop-blur-3xl'
+    ~ className='w-76 gap-0 overflow-hidden rounded-md border border-btable-border bg-btable-popover p-0!'
     ~ )
     h4(id={labelId} className='sr-only') Add Filter
     p(id={descriptionId} className='sr-only') #{description ?? 'Narrow this table down to the rows you want.'}

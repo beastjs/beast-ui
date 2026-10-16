@@ -1,13 +1,27 @@
 import { parseAsStringEnum } from '@octanejs/nuqs'
+import { normalizeGrouping } from './column-grouping.ts'
 import type {
   ColumnFiltersState,
   ColumnOrderState,
   ColumnSizingState,
+  GroupingState,
   RowPinningState,
   RowSelectionState,
   SortingState,
   ColumnVisibilityState as VisibilityState
 } from '@octanejs/tanstack-table'
+
+/** Same encoded-id format as ordering, constrained to groupable columns. */
+export const createColumnGroupingParser = (allowedIds: string[], initialGrouping: GroupingState = []) => {
+  const serialize = (value: GroupingState) => normalizeGrouping(value, allowedIds).map(encodeToken).join(',')
+  return {
+    parse: (value: string | null): GroupingState =>
+      normalizeGrouping(uniqueBoundedTokens(trimStateValue(value).split(','), TABLE_QUERY_LIMITS.visibilityEntries), allowedIds),
+    serialize,
+    defaultValue: normalizeGrouping(initialGrouping, allowedIds),
+    eq: (left: GroupingState, right: GroupingState) => serialize(left) === serialize(right),
+  }
+}
 
 export const TABLE_QUERY_LIMITS = {
   columnFilters: 64,

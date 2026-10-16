@@ -1,3 +1,4 @@
+import type { DataTableColumnMeta } from './cell-editor.ts'
 import type {
   Cell_Cell,
   ColumnDef_ColumnSizing,
@@ -89,9 +90,10 @@ export interface HyperTableModel {
  * optional because `columnGroupingFeature` is optional — the same probe the
  * library's own `FlexRender` does rather than requiring the feature.
  */
-export interface HyperCellModel extends Pick<Cell_Cell<any, any, any>, 'id'> {
+export interface HyperCellModel extends Pick<Cell_Cell<any, any, any>, 'id' | 'getValue'> {
+  row?: { getIsGrouped?: () => boolean }
   column: Pick<Column_Column<any, any, any>, 'id'> & {
-    columnDef: { cell?: Renderable<any>; aggregatedCell?: Renderable<any> }
+    columnDef: { cell?: Renderable<any>; aggregatedCell?: Renderable<any>; meta?: DataTableColumnMeta }
     getCanHide?: () => boolean
   }
   getContext: () => object
@@ -116,6 +118,11 @@ export interface HyperViewColumn
   extends LabelledColumn,
     Pick<Column_ColumnVisibility, 'getCanHide' | 'getIsVisible' | 'toggleVisibility'>,
     Pick<Column_ColumnPinning, 'getIsPinned'> {}
+
+/** A leaf column whose pinning can be changed through the toolbar. */
+export interface HyperPinningColumn
+  extends LabelledColumn,
+    Pick<Column_ColumnPinning, 'getCanPin' | 'pin'> {}
 
 /**
  * Props of the lazily loaded reorder list.

@@ -104,14 +104,14 @@ if isMobile && !isExpanded
     ~ icon='search'
     ~ )
 else
-  div(className={cn('relative min-w-0', isExpanded ? 'w-full' : 'w-full md:w-auto')})
+  div(className={cn('table-search relative min-w-0', isExpanded && 'table-search-expanded')})
     Input(
       ~ id={id}
       ~ ref={inputRef}
       ~ className={cn(
-      ~   'peer h-9 min-w-0 rounded-sm border-none ps-3 outline-0 md:w-48 md:min-w-60',
-      ~   'uppercase placeholder:text-btable-foreground/80 placeholder:select-none placeholder:ps-0.75',
-      ~   'font-mono text-sm bg-btable-sidebar/80 opacity-60 focus:opacity-100 focus:placeholder:text-btable-foreground/60',
+      ~   'table-search-input peer h-8 min-w-0 rounded-sm border-none ps-3 pe-9 outline-0',
+      ~   'uppercase! placeholder:text-btable-foreground/80 placeholder:select-none placeholder:ps-0.75',
+      ~   'font-mono! text-sm bg-btable-sidebar/80 opacity-60 focus:opacity-100 focus:placeholder:text-btable-foreground/60',
       ~   (hasValue || isExpanded) && 'pe-10 opacity-100',
       ~ )}
       ~ value={value}
@@ -126,8 +126,8 @@ else
     // The trailing glyph is decoration only, so it steps aside whenever the
     // clear button needs the same corner.
     if !hasValue && !isExpanded
-      div(className='pointer-events-none absolute inset-y-0 inset-e-0 flex items-center justify-center pe-1 text-btable-muted-foreground/80 peer-disabled:opacity-40')
-        Icon(name='slash' aria-hidden='true' className='size-3.5 md:size-5')
+      div(className='pointer-events-none absolute inset-y-0 inset-e-0 flex items-center justify-center w-9 text-btable-muted-foreground/80 peer-disabled:opacity-40')
+        Icon(name='slash' aria-hidden='true' className='size-4.5')
     if hasValue || isExpanded
       button(
         ~ type='button'

@@ -48,6 +48,7 @@ export async function initIcons(options: IconsInitOptions): Promise<IconSetupFil
   const scripts = {
     'icons:build': 'bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts',
     'icons:check': 'bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts --check',
+    'icons:unused': 'bun scripts/build-icons.ts --svg src/lib/icons/svg --out src/lib/icons/icons.ts --check --unused src',
   }
   const conflicts: string[] = []
   for (const [key, value] of Object.entries(scripts)) {

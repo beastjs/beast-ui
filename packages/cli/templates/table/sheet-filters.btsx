@@ -1,0 +1,15 @@
+import { type SheetRow } from "./lib/sheets";
+import { features } from "./ui/table/hyper/features";
+import { type FilterDefinition } from "./ui/table/hyper/filter-list-config";
+import { getColumnHeaderText } from "./ui/table/hyper/filter-utils";
+import { type DataTableFilterListProps } from "./ui/table/types";
+import FilterList from "./ui/table/hyper/FilterList.btsx";
+props { columns, columnFilters, onReset }: DataTableFilterListProps<SheetRow, typeof features>
+setup
+  const filters: FilterDefinition[] = columns.map((column) => ({
+    id: column.id,
+    label: getColumnHeaderText(column),
+    variant: 'faceted',
+  }))
+div()
+  FilterList(columns={columns} columnFilters={columnFilters} onReset={onReset} filters={filters} description='Filter sheet columns by their values.')

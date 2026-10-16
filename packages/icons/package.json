@@ -8,6 +8,9 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "icons:build": "bun ../../scripts/build-icons.ts --svg svg --out src/icons.ts",
+    "icons:check": "bun ../../scripts/build-icons.ts --svg svg --out src/icons.ts --check",
+    "icons:unused": "bun ../../scripts/build-icons.ts --svg svg --out src/icons.ts --check --unused ../..",
     "typecheck": "tsrx-tsc --noEmit"
   },
   "peerDependencies": {

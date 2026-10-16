@@ -18,6 +18,8 @@
     "build": "bun run registry:build && bun run --cwd packages/cli build && bun run --cwd apps/docs build && bun run --cwd apps/web validate && bun run --cwd apps/registry validate",
     "registry:build": "bun scripts/build-registry.ts",
     "icons:build": "bun scripts/build-icons.ts --svg packages/icons/svg --out packages/icons/src/icons.ts",
+    "icons:check": "bun scripts/build-icons.ts --svg packages/icons/svg --out packages/icons/src/icons.ts --check",
+    "icons:unused": "bun scripts/build-icons.ts --svg packages/icons/svg --out packages/icons/src/icons.ts --check --unused .",
     "registry:import": "bun scripts/registry-import/index.ts",
     "showcase:preview": "bun scripts/preview-gen/index.ts",
     "showcase:pending": "bun scripts/preview-gen/pending.ts",

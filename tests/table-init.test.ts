@@ -5,7 +5,7 @@ import os from 'node:os'
 import { initTable } from '../packages/cli/src/commands/table.ts'
 import { compileBeast } from 'beast-tsrx'
 import { tableAssets } from '../packages/cli/src/table-assets.ts'
-import { parseTextDocument, parseMarkdownTable } from '../packages/cli/templates/table/lib/sheets.ts'
+import { jsonSheetDocument, parseTextDocument, parseMarkdownTable } from '../packages/cli/templates/table/lib/sheets.ts'
 
 const dirs: string[] = []
 afterEach(async () => { await Promise.all(dirs.splice(0).map(dir => rm(dir, { recursive: true, force: true }))) })
@@ -44,7 +44,7 @@ test('installs the complete isolated feature, wires CSS once, and preserves the 
   expect(await readFile(path.join(cwd, 'src/style.css'), 'utf8')).toBe(css)
 })
 
-for (const [runtime, tableVersion] of [['0.2.13', '0.1.51'], ['0.3.2', '0.1.53'], ['0.4.3', '0.1.54'], ['0.8.0', '0.1.58']]) {
+for (const [runtime, tableVersion] of [['0.2.13', '0.1.51'], ['0.3.2', '0.1.53'], ['0.4.3', '0.1.54'], ['0.8.0', '0.1.58'], ['0.12.1', '0.1.63']]) {
   test(`selects adapter releases compatible with Octane ${runtime}`, async () => {
     const cwd = await project(runtime)
     const logs: string[] = []
@@ -97,6 +97,43 @@ test('large text files truncate without overflowing the argument stack, and reta
   expect(sheet.totalRows).toBe(180000)
   expect(sheet.truncated).toBe(true)
   expect(parseMarkdownTable('| name |\n| --- |')).toEqual([['name']])
+})
+
+test('JSON sheets preserve first-seen keys, own values, and truncation totals', () => {
+  const sheet = jsonSheetDocument([
+    { name: 'Ada', active: false, count: 0 },
+    { name: 'Ben', details: { role: 'editor' }, tags: ['a', 'b'] },
+  ], 'People').sheets[0]!
+  expect(sheet.name).toBe('People')
+  expect(sheet.columns).toEqual(['name', 'active', 'count', 'details', 'tags'])
+  expect(sheet.rows).toEqual([
+    ['Ada', 'false', '0', '', ''],
+    ['Ben', '', '', '{"role":"editor"}', '["a","b"]'],
+  ])
+  const large = jsonSheetDocument(Array.from({ length: 5001 }, () => ({ value: 'a' }))).sheets[0]!
+  expect(large.rows).toHaveLength(5000)
+  expect(large.totalRows).toBe(5001)
+  expect(large.truncated).toBe(true)
+  const keys = Object.fromEntries(Array.from({ length: 501 }, (_, index) => [`key-${index}`, index]))
+  expect(jsonSheetDocument([keys]).sheets[0]!.columns).toHaveLength(500)
+  expect(jsonSheetDocument([]).sheets[0]!.rows).toEqual([])
+})
+
+test('the reference table ships with all of its relative imports and CSS assets', () => {
+  expect(tableAssets.files['new-data-table.btsx']).toContain('cellEditing={cellEditing}')
+  expect(tableAssets.files['new-data-table.btsx']).toContain("from './sheet-filters.btsx'")
+  expect(tableAssets.files['lib/icons/icons.ts']).toContain('undo:')
+  for (const [filename, content] of Object.entries(tableAssets.files)) {
+    expect(filename).not.toEndWith('.test.ts')
+    const references = [
+      ...content.matchAll(/(?:from\s*|import\s*\(?)["'](\.[^"']+)["']/g),
+      ...content.matchAll(/url\(["']?(\.[^"')]+)["']?\)/g),
+    ]
+    for (const [, reference] of references) {
+      const target = path.posix.normalize(path.posix.join(path.posix.dirname(filename), reference!))
+      expect([target, `${target}.ts`, `${target}.btsx`, `${target}/index.ts`].some(candidate => candidate in tableAssets.files)).toBe(true)
+    }
+  }
 })
 
 test('embedded table assets match the canonical source', async () => {

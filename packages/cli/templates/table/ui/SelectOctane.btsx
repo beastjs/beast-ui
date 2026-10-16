@@ -1,6 +1,7 @@
 import SelectBase, { mergeStyles } from '@octanejs/select'
 import type { ClassNamesConfig, Props, SingleValue, StylesConfig } from '@octanejs/select'
 import { cn } from '../lib/utils.ts'
+import './popup-scrollbars.css'
 
 module
   export type Option = {
@@ -60,7 +61,7 @@ module
     clearIndicator: () =>
       'flex items-center px-1 text-btable-muted-foreground transition-colors hover:text-btable-foreground [&_svg]:size-4',
     menu: () =>
-      'mt-1 overflow-hidden rounded-[4px] border border-btable-border/65 bg-btable-popover text-btable-popover-foreground shadow-lg',
+      'table-popup-content mt-1 overflow-hidden rounded-[4px] border border-btable-border/65 bg-btable-popover text-btable-popover-foreground shadow-lg',
     menuList: () => 'max-h-60 overflow-y-auto p-0',
     option: (props) => {
       const state = props as PartState
