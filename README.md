@@ -5,6 +5,8 @@ and [Octane](https://octanejs.dev/), in the shape of a shadcn-compatible registr
 Components are not installed as a runtime dependency — the CLI copies the source
 into your project, where you own and edit it.
 
+![Mural](public/beast-ui-ss.png)
+
 ```bash
 bun install
 bun run dev      # serves the component showcase at http://127.0.0.1:3000
@@ -22,23 +24,23 @@ Copies a standalone spreadsheet viewer with table controls, local parsers, typed
 
 ## Layout
 
-| Path | Purpose |
-| --- | --- |
-| `registry.json` | The catalog: one entry per item, with its files, npm dependencies, and registry dependencies. |
-| `packages/registry/` | The component sources themselves (`ui/`, `lib/`, `styles/`) plus the shared Zod schema and path helpers. |
-| `packages/cli/` | The `beast-ui` CLI: `init`, `list`, `add`, `icons init`, `table init`. |
-| `apps/web/` | The component showcase: live previews of every registry component, built with Rsbuild. |
-| `apps/docs/` | The docs site, to become the markdown documentation. In development it also serves the built registry at `/r/*.json`. |
-| `apps/registry/` | The Cloudflare Worker that serves the registry in production. |
-| `scripts/build-registry.ts` | Compiles `registry.json` into `apps/registry/public/r/` payloads. |
-| `scripts/registry-import/` | `bun run registry:import`: wires staged components into the registry and showcase. |
-| `scripts/preview-gen/` | `bun run showcase:preview`: generates and typechecks showcase previews. |
-| `docs/adding-components.md` | Usage guide for `registry:import` and `showcase:preview`. |
-| `packages/icons/` | `@beast-ui/icons`: the icons the web and docs apps draw, one `.svg` per icon, and the `Icon` component. |
-| `scripts/build-icons.ts` | `bun run icons:build`: turns a folder of `.svg` files into an `icons.ts` module. Other apps copy it. |
-| `scripts/migrate-icons.ts` | Moves an app's older `icons.ts` map to `.svg` files, once per app. |
-| `docs/icons.md` | How icons work, and how to set them up or move them over in any app. |
-| `tests/registry.test.ts` | End-to-end coverage of the build, the resolver, and the installer. |
+| Path                        | Purpose                                                                                                               |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `registry.json`             | The catalog: one entry per item, with its files, npm dependencies, and registry dependencies.                         |
+| `packages/registry/`        | The component sources themselves (`ui/`, `lib/`, `styles/`) plus the shared Zod schema and path helpers.              |
+| `packages/cli/`             | The `beast-ui` CLI: `init`, `list`, `add`, `icons init`, `table init`.                                                |
+| `apps/web/`                 | The component showcase: live previews of every registry component, built with Rsbuild.                                |
+| `apps/docs/`                | The docs site, to become the markdown documentation. In development it also serves the built registry at `/r/*.json`. |
+| `apps/registry/`            | The Cloudflare Worker that serves the registry in production.                                                         |
+| `scripts/build-registry.ts` | Compiles `registry.json` into `apps/registry/public/r/` payloads.                                                     |
+| `scripts/registry-import/`  | `bun run registry:import`: wires staged components into the registry and showcase.                                    |
+| `scripts/preview-gen/`      | `bun run showcase:preview`: generates and typechecks showcase previews.                                               |
+| `docs/adding-components.md` | Usage guide for `registry:import` and `showcase:preview`.                                                             |
+| `packages/icons/`           | `@beast-ui/icons`: the icons the web and docs apps draw, one `.svg` per icon, and the `Icon` component.               |
+| `scripts/build-icons.ts`    | `bun run icons:build`: turns a folder of `.svg` files into an `icons.ts` module. Other apps copy it.                  |
+| `scripts/migrate-icons.ts`  | Moves an app's older `icons.ts` map to `.svg` files, once per app.                                                    |
+| `docs/icons.md`             | How icons work, and how to set them up or move them over in any app.                                                  |
+| `tests/registry.test.ts`    | End-to-end coverage of the build, the resolver, and the installer.                                                    |
 
 ## Adding a component to the registry
 
@@ -159,8 +161,8 @@ motion uses.
 For example, in `src/style.css`:
 
 ```css
-@import "tailwindcss";
-@import "./styles/theme.css";
+@import 'tailwindcss';
+@import './styles/theme.css';
 ```
 
 Then use the installed component in a `.btsx` file:
@@ -200,20 +202,20 @@ edit it directly to change settings.
 
 ### Commands and options
 
-| Command or option | Behavior |
-| --- | --- |
-| `init` | Create configuration using the hosted registry. |
-| `init --registry <url>` | Use another registry; the URL must point to the directory containing the JSON items. |
-| `list` | Show available items from the configured registry. |
-| `list --registry <url>` | List items from another registry. Without a config, `list` uses the hosted registry. |
-| `add <items...>` | Copy one or more items and their registry dependencies; install their npm dependencies. |
-| `-c, --cwd <path>` | Select the target project; defaults to the current directory. |
-| `-r, --registry <url>` | Sets the registry for `init`; overrides it for a single `list` or `add` invocation. |
-| `add -y, --yes` | Create `beast-ui.json` without asking when it is missing. |
-| `add --dry-run` | Fetch and validate items, then show changes without writing files or installing packages. |
-| `add --overwrite` | Allow replacement of differing existing source files. |
-| `add --skip-install` | Copy source only; print the npm dependencies to install yourself. |
-| `--help` | Show help; also available for each command. |
+| Command or option       | Behavior                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `init`                  | Create configuration using the hosted registry.                                           |
+| `init --registry <url>` | Use another registry; the URL must point to the directory containing the JSON items.      |
+| `list`                  | Show available items from the configured registry.                                        |
+| `list --registry <url>` | List items from another registry. Without a config, `list` uses the hosted registry.      |
+| `add <items...>`        | Copy one or more items and their registry dependencies; install their npm dependencies.   |
+| `-c, --cwd <path>`      | Select the target project; defaults to the current directory.                             |
+| `-r, --registry <url>`  | Sets the registry for `init`; overrides it for a single `list` or `add` invocation.       |
+| `add -y, --yes`         | Create `beast-ui.json` without asking when it is missing.                                 |
+| `add --dry-run`         | Fetch and validate items, then show changes without writing files or installing packages. |
+| `add --overwrite`       | Allow replacement of differing existing source files.                                     |
+| `add --skip-install`    | Copy source only; print the npm dependencies to install yourself.                         |
+| `--help`                | Show help; also available for each command.                                               |
 
 Examples:
 
@@ -271,9 +273,9 @@ reload, and hashed files under `/static/` are cached as immutable. Wrangler runs
 the web build before every upload. Create the Worker in Workers Builds with the
 same settings as the registry, using these commands:
 
-| Setting | Value |
-| --- | --- |
-| Deploy command | `bun run web:deploy` |
+| Setting                              | Value                 |
+| ------------------------------------ | --------------------- |
+| Deploy command                       | `bun run web:deploy`  |
 | Non-production branch deploy command | `bun run web:preview` |
 
 ## Deploying the registry
@@ -298,13 +300,13 @@ deploys to production, and other branches upload preview versions with their
 own preview URLs. Configure the build under **Workers & Pages →
 beast-ui-registry → Settings → Build**:
 
-| Setting | Value |
-| --- | --- |
-| Root directory | `/` (the repository root, where `bun.lock` is) |
-| Build command | `bun install --frozen-lockfile` |
-| Deploy command | `bun run registry:deploy` |
-| Non-production branch deploy command | `bun run registry:preview` |
-| Build variable | `BUN_VERSION` = `1.4.0` (older Bun releases cannot read `bun.lock`) |
+| Setting                              | Value                                                               |
+| ------------------------------------ | ------------------------------------------------------------------- |
+| Root directory                       | `/` (the repository root, where `bun.lock` is)                      |
+| Build command                        | `bun install --frozen-lockfile`                                     |
+| Deploy command                       | `bun run registry:deploy`                                           |
+| Non-production branch deploy command | `bun run registry:preview`                                          |
+| Build variable                       | `BUN_VERSION` = `1.4.0` (older Bun releases cannot read `bun.lock`) |
 
 The deploy commands run Wrangler from `apps/registry` with the version pinned
 in `bun.lock`. The Worker is served at
