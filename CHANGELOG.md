@@ -6,6 +6,11 @@ All notable changes to `beast-ui` will be recorded here.
 
 ### Added
 
+- `@beastjs/cli` 0.4.0 extends `table init`: a `NewDataTable` JSON workspace
+  with inferred columns, keyboard cell editing, status badges, and undo/redo;
+  column grouping, row selection with drag ranges, and cell selection with
+  numeric summaries; 46 icons; and adapter profiles for Octane 0.12.x and
+  0.16.x.
 - `@beastjs/cli@0.3.2 table init`: a standalone spreadsheet viewer extracted from LiveSnaps, with workbook tabs, table controls, parsers, 30 icons, scoped styles, runtime-compatible adapters, conflict preflight, and dry-run support.
 
 - `bun run showcase:preview`: an interactive generator for showcase previews.

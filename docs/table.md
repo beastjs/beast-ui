@@ -3,8 +3,8 @@
 Install the spreadsheet viewer into an existing Beast + Octane project with Tailwind CSS v4:
 
 ```bash
-bunx @beastjs/cli@0.3.2 table init
-# Equivalent shortcut: bunx @beastjs/cli@0.3.2 add table
+bunx @beastjs/cli@0.4.0 table init
+# Equivalent shortcut: bunx @beastjs/cli@0.4.0 add table
 ```
 
 The CLI copies the complete feature into `src/components/table`, installs its npm dependencies with the project's package manager, and imports `table.css` into the Tailwind entry stylesheet. It includes the sheet panel, the `NewDataTable` JSON workspace, DataTable and its controls, worksheet selector, parser, typed icons, and URL-state adapter. Source imports are relative, so no `@/` alias or `beast-ui.json` is required. The bundle is embedded in the CLI; it does not need the hosted component registry.
@@ -40,10 +40,10 @@ The installer supports Octane 0.2.x, 0.3.x, 0.4.x, 0.8.x, 0.12.x, and 0.16.x. It
 ## Options
 
 ```bash
-bunx @beastjs/cli@0.3.2 table init --dry-run
-bunx @beastjs/cli@0.3.2 table init --cwd ../my-app --css src/index.css
-bunx @beastjs/cli@0.3.2 table init --path src/features/table --skip-install
-bunx @beastjs/cli@0.3.2 table init --package-manager npm
+bunx @beastjs/cli@0.4.0 table init --dry-run
+bunx @beastjs/cli@0.4.0 table init --cwd ../my-app --css src/index.css
+bunx @beastjs/cli@0.4.0 table init --path src/features/table --skip-install
+bunx @beastjs/cli@0.4.0 table init --package-manager npm
 ```
 
 `--css` is project-relative. Without it, the installer looks for one common stylesheet containing `@import "tailwindcss"`. If it finds zero or multiple candidates, it asks you to select one through `--css`. It checks every destination before installing packages or writing source. Different existing files are reported as conflicts and preserved. Repeating an unchanged install keeps the source and avoids adding duplicate CSS imports. With `--skip-install`, install the dependencies printed by the CLI before building.
@@ -76,4 +76,4 @@ bun test tests/table-*.test.ts
 bun run --cwd packages/cli build
 ```
 
-`packages/cli/src/table-assets.ts` is generated. The build embeds it in `dist/index.js`, so npm publishes the feature together with the command. The package version is prepared as `0.3.2`. The existing publish workflow releases a new version after its package manifest is merged to `main`; preparing source locally does not publish it.
+`packages/cli/src/table-assets.ts` is generated. The build embeds it in `dist/index.js`, so npm publishes the feature together with the command. The package version is prepared as `0.4.0`. The existing publish workflow releases a new version after its package manifest is merged to `main`; preparing source locally does not publish it.

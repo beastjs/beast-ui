@@ -17,7 +17,7 @@ bun run check:ci # typecheck + build (used by CI and CLI publishing)
 ## Spreadsheet viewer
 
 ```bash
-bunx @beastjs/cli@0.3.2 table init
+bunx @beastjs/cli@0.4.0 table init
 ```
 
 Copies a standalone spreadsheet viewer with table controls, local parsers, typed icons, and styles into a Beast + Octane project. See [docs/table.md](docs/table.md) for setup, options, supported toolchains, and limits.

@@ -64,14 +64,14 @@ commit the SVGs with `icons.ts`. Put colored art in `svg/color/`. Use
 ## Table
 
 ```bash
-bunx @beastjs/cli@0.3.2 table init
-bunx @beastjs/cli@0.3.2 table init --dry-run
+bunx @beastjs/cli@0.4.0 table init
+bunx @beastjs/cli@0.4.0 table init --dry-run
 # Equivalent shortcut, installed separately from registry components:
-bunx @beastjs/cli@0.3.2 add table
+bunx @beastjs/cli@0.4.0 add table
 ```
 
 Requires an existing Beast + Octane project and Tailwind CSS v4. Copies the
-standalone spreadsheet viewer, table controls, local parser, 30 typed icons,
+standalone spreadsheet viewer, table controls, local parser, 46 typed icons,
 and its namespaced palette into `src/components/table`. Imports the styles
 into the Tailwind entry and installs compatible adapters without replacing
 Octane. No aliases, shared UI, or `beast-ui.json` are needed. Different existing
