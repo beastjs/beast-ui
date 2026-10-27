@@ -15,14 +15,14 @@ import { isSortable, useSortable } from '@octanejs/dnd-kit/sortable'
 import { useRender } from '@octanejs/base-ui/use-render'
 import type { JSX } from 'octane/jsx-runtime'
 import { createContext,
-  ~ createElement,
+  ~ type ComponentBody,
   ~ type CSSProperties,
   ~ createPortal,
   ~ isChildrenBlock,
-  ~ isValidElement,
   ~ useContext,
   ~ useId,
-  ~ useState } from 'octane'
+  ~ useState,
+  ~ useSyncExternalStore } from 'octane'
 
 import { cn } from '../../../lib/utils.ts'
 import { useComposedRefs } from './composition.ts'
@@ -89,7 +89,6 @@ module
   export interface SortableContentProps extends Omit<DivProps, 'children'> {
     children?: unknown
     render?: RenderProp
-    asChild?: boolean
     withoutSlot?: boolean
   }
 
@@ -97,9 +96,9 @@ module
     value: UniqueIdentifier
     style?: CSSProperties
     children?: unknown
-    render?: RenderProp
+    /** Component rendered in place of the default div; it receives the item's props and ref. */
+    render?: ComponentBody<any>
     asHandle?: boolean
-    asChild?: boolean
     disabled?: boolean
   }
 
@@ -113,7 +112,6 @@ module
   export interface SortableItemHandleProps extends Omit<ButtonProps, 'children'> {
     children?: unknown
     render?: RenderProp
-    asChild?: boolean
   }
 
   export type SortableOverlayProps = Omit<DragOverlayProps<Data, Draggable<Data>>, 'children'> & {
@@ -172,19 +170,23 @@ module
     return Boolean((event as { defaultPrevented?: boolean }).defaultPrevented)
   }
 
+  // The overlay portals into the document body, which only exists in the browser.
+  const subscribeToBody = () => () => {}
+  const getBody = () => document.body
+  const getServerBody = () => null
+
 component SortableContent
-  props { children, render, asChild = false, withoutSlot = false, ref, ...contentProps }: SortableContentProps
+  props { children, render, withoutSlot = false, ref, ...contentProps }: SortableContentProps
   setup
     useSortableContext(CONTENT_NAME)
-    const childIsRenderElement = asChild && isValidElement(children)
     const renderedContent = useRender({
       defaultTagName: 'div',
-      render: render ?? (childIsRenderElement ? children : undefined),
+      render,
       ref,
       props: {
         'data-slot': 'sortable-content',
         ...contentProps,
-        children: childIsRenderElement ? undefined : children,
+        children,
       },
     })
     const content = withoutSlot ? children : renderedContent
@@ -193,7 +195,7 @@ component SortableContent
     | #{content}
 
 component SortableItem
-  props { value, children, render, asHandle = false, asChild = false, disabled = false, className, ref, ...itemProps }: SortableItemProps
+  props { value, children, render, asHandle = false, disabled = false, className, ref, ...itemProps }: SortableItemProps
   setup
     const inSortableContent = useContext(SortableContentContext)
     const inSortableOverlay = useContext(SortableOverlayContext)
@@ -223,42 +225,41 @@ component SortableItem
       disabled,
     } as SortableItemContextValue
 
-    const childIsRenderElement = asChild && isValidElement(children)
-    const item = useRender({
-      defaultTagName: 'div',
-      render: render ?? (childIsRenderElement ? children : undefined),
-      ref: composedRef,
-      props: {
-        'data-slot': 'sortable-item',
-        id,
-        'data-dragging': sortable.isDragging ? '' : undefined,
-        ...itemProps,
-        style: {
-          ...(itemProps.style ?? {}),
-          opacity: sortable.isDragging ? 0 : itemProps.style?.opacity,
-        },
-        tabIndex: disabled ? undefined : 0,
-        children: childIsRenderElement ? undefined : children,
-        className: cn(
-          'focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-btable-ring focus-visible:ring-offset-1',
-          {
-            'touch-none select-none': asHandle,
-            'cursor-default': context.flatCursor,
-            'data-dragging:cursor-grabbing': !context.flatCursor,
-            'cursor-grab': !sortable.isDragging && asHandle && !context.flatCursor,
-            'pointer-events-none opacity-0': sortable.isDragging,
-            'pointer-events-none opacity-50': disabled,
-          },
-          className,
-        ),
+    const itemElementProps = {
+      'data-slot': 'sortable-item',
+      id,
+      'data-dragging': sortable.isDragging ? '' : undefined,
+      ...itemProps,
+      style: {
+        ...(itemProps.style ?? {}),
+        opacity: sortable.isDragging ? 0 : itemProps.style?.opacity,
       },
-    })
+      tabIndex: disabled ? undefined : 0,
+      children,
+      className: cn(
+        'focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-btable-ring focus-visible:ring-offset-1',
+        {
+          'touch-none select-none': asHandle,
+          'cursor-default': context.flatCursor,
+          'data-dragging:cursor-grabbing': !context.flatCursor,
+          'cursor-grab': !sortable.isDragging && asHandle && !context.flatCursor,
+          'pointer-events-none opacity-0': sortable.isDragging,
+          'pointer-events-none opacity-50': disabled,
+        },
+        className,
+      ),
+    }
+    const item = useRender({ defaultTagName: 'div', ref: composedRef, props: itemElementProps })
+    const ItemComponent = render
 
   SortableItemContext(value={itemContext})
-    | #{item}
+    if ItemComponent
+      ItemComponent({...itemElementProps} ref={composedRef})
+    else
+      | #{item}
 
 component SortableItemHandle
-  props { children, render, asChild = false, disabled, className, ref, ...itemHandleProps }: SortableItemHandleProps
+  props { children, render, disabled, className, ref, ...itemHandleProps }: SortableItemHandleProps
   setup
     const itemContext = useContext(SortableItemContext)
     if (!itemContext) throw new Error(SORTABLE_ERROR[ITEM_HANDLE_NAME])
@@ -267,10 +268,9 @@ component SortableItemHandle
     const composedRef = useComposedRefs(ref, (node: HTMLElement | null) => {
       if (!isDisabled) itemContext.handleRef(node)
     })
-    const childIsRenderElement = asChild && isValidElement(children)
     const handle = useRender({
       defaultTagName: 'button',
-      render: render ?? (childIsRenderElement ? children : undefined),
+      render,
       ref: composedRef,
       props: {
         'data-slot': 'sortable-item-handle',
@@ -278,7 +278,7 @@ component SortableItemHandle
         'aria-controls': itemContext.id,
         'data-dragging': itemContext.isDragging ? '' : undefined,
         ...itemHandleProps,
-        children: childIsRenderElement ? undefined : children,
+        children,
         className: cn(
           'select-none disabled:pointer-events-none disabled:opacity-50',
           context.flatCursor ? 'cursor-default' : 'cursor-grab data-dragging:cursor-grabbing',
@@ -294,21 +294,19 @@ component SortableOverlay
   props { container: containerProp, children, className, dropAnimation = { duration: 250, easing: 'ease' }, ...overlayProps }: SortableOverlayProps
   setup
     const context = useSortableContext(OVERLAY_NAME)
-    const container = containerProp ?? (typeof document === 'undefined' ? null : document.body)
+    const body = useSyncExternalStore(subscribeToBody, getBody, getServerBody)
+    const container = containerProp ?? body
     const overlayChildren = context.activeId == null
       ? null
       : typeof children === 'function' && !isChildrenBlock(children)
         ? children({ value: context.activeId })
         : children
-    const overlay = createElement(
-      DragOverlay,
-      {
-        ...overlayProps,
-        className: cn(!context.flatCursor && 'cursor-grabbing', className),
-        dropAnimation,
-        children: createElement(SortableOverlayContext, { value: true }, overlayChildren),
-      },
-    )
+    const overlayClassName = cn(!context.flatCursor && 'cursor-grabbing', className)
+    const overlay = @{
+      <DragOverlay {...overlayProps} className={overlayClassName} dropAnimation={dropAnimation}>
+        <SortableOverlayContext value={true}>{overlayChildren}</SortableOverlayContext>
+      </DragOverlay>
+    }
     const portal = container ? createPortal(overlay, container) : null
 
   | #{portal}

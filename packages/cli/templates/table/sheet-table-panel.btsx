@@ -1,5 +1,5 @@
 import { buildColumns } from './lib/sheet-columns.ts'
-import { createElement, useId, useMemo, useRef, useState } from 'octane'
+import { useId, useMemo, useRef, useState } from 'octane'
 import { parseAsString, useQueryStates } from '@octanejs/nuqs'
 import DataTable from './ui/table/DataTable.btsx'
 import SelectOctane from './ui/SelectOctane.btsx'
@@ -79,9 +79,8 @@ setup
   const sheetPresentation = getSheetPresentation(sourceName)
   const worksheetOptions = sheetDocument?.sheets.map((tab, index) => ({ value: String(index), label: tab.name })) ?? []
 
-  const sheetSummary = sheet ? createElement('p', {
-    className: 'm-0 text-[13px] text-btable-muted-foreground',
-  }, `${sheet.columns.length} columns · ${sheet.totalRows} rows${sheet.truncated ? ` · showing first ${sheet.rows.length}` : ''}`) : null
+  const sheetSummaryText = sheet ? `${sheet.columns.length} columns · ${sheet.totalRows} rows${sheet.truncated ? ` · showing first ${sheet.rows.length}` : ''}` : ''
+  const sheetSummary = sheet ? @{ <p className="m-0 text-[13px] text-btable-muted-foreground">{sheetSummaryText}</p> } : null
 
   const acceptSheet = async (next: SheetDocument, name: string) => {
     await resetSheetQuery(null)
@@ -207,7 +206,7 @@ div(className='space-y-3')
           if sheetDocument && sheetDocument.sheets.length > 1
             fragment
               nav(aria-label='Worksheets' className='hidden min-w-0 flex-1 items-center overflow-x-auto gap-3 py-0 md:flex border-b border-b-sidebar-border')
-                each tab, index in sheetDocument.sheets key index
+                each tab, index in sheetDocument.sheets key tab.name
                   button(
                     ~ type='button'
                     ~ aria-pressed={index === activeSheetIndex}

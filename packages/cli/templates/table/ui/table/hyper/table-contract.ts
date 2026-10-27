@@ -110,7 +110,7 @@ export interface HyperRowModel
 
 /** The minimum a column must expose to be given a human label in the UI. */
 export interface LabelledColumn extends Pick<Column_Column<any, any, any>, 'id'> {
-  columnDef: { header?: unknown }
+  columnDef: { header?: unknown; meta?: { headerText?: unknown } }
 }
 
 /** A column as the column-view menu and the reorder list read it. */

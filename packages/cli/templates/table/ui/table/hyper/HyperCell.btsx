@@ -1,7 +1,7 @@
 import { cn } from '../../../lib/utils.ts'
 import './cell-interaction.css'
 import { flexRender } from '@octanejs/tanstack-table'
-import { useEffect, useRef, useState, type OctaneNode, type Ref } from 'octane'
+import { useEffect, useLinkedState, useRef, type OctaneNode, type Ref } from 'octane'
 import { getPinnedColumnStyle } from './column-pinning.ts'
 import type { DefaultColumnPinningPosition, PinnedColumnLayout } from './column-pinning.ts'
 import type { HyperCellModel } from './table-contract.ts'
@@ -90,7 +90,11 @@ setup
   const preserveExternalFocusRef = useRef(false)
   const selectInitialValueRef = useRef(true)
   const pointerFocusRef = useRef(false)
-  const [draft, setDraft] = useState(interaction?.value ?? '')
+  // Each edit session starts its draft from the cell's value.
+  const editValue = interaction?.value ?? ''
+  const [draft, setDraft] = useLinkedState(`${isEditing}|${cell.id}`, () => editValue)
+  const isActive = interaction?.active === true
+  const isDragging = interaction?.dragging === true
   const editorType = interaction?.editor?.type ?? 'text'
   const editorOptions = interaction?.editor?.type === 'select' ? interaction.editor.options : []
   const badge = cell.getIsAggregated?.() || (cell.row?.getIsGrouped?.() !== false && cell.getIsPlaceholder?.())
@@ -98,12 +102,11 @@ setup
 
   useEffect(() => {
     if (!isEditing) return
-    const value = interaction?.value ?? ''
+    const value = editValue
     draftRef.current = value
     finishedRef.current = false
     composingRef.current = false
     preserveExternalFocusRef.current = false
-    setDraft(value)
     const input = inputRef.current
     if (input) {
       // Set the initial value before selection; the controlled render follows.
@@ -115,15 +118,15 @@ setup
       }
     }
     selectInitialValueRef.current = true
-  }, [isEditing, cell.id])
+  }, [isEditing, editValue])
 
   useEffect(() => {
-    if (interaction?.active && !interaction.dragging && isVisible && !isEditing && !preserveExternalFocusRef.current) {
+    if (isActive && !isDragging && isVisible && !isEditing && !preserveExternalFocusRef.current) {
       cellRef.current?.focus()
       cellRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
     }
     preserveExternalFocusRef.current = false
-  }, [interaction?.active, interaction?.dragging, isEditing, isVisible, cell.id])
+  }, [isActive, isDragging, isVisible, isEditing])
 
   const isInteractiveTarget = (event: MouseEvent | KeyboardEvent | PointerEvent) =>
     event.target instanceof Element && event.target.closest(INTERACTIVE_TARGET_SELECTOR) !== null

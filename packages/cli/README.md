@@ -88,6 +88,6 @@ Table
 Use `--cwd` for another project, `--path` to choose a source directory,
 `--css` to select the Tailwind entry, `--package-manager` to override lockfile
 detection, or `--skip-install` to defer npm dependencies. Octane 0.2.x,
-0.3.x, 0.4.x, and 0.8.x have pinned adapter profiles. See the
+0.3.x, 0.4.x, 0.8.x, 0.12.x, and 0.16.x have pinned adapter profiles. See the
 [table guide](https://github.com/beastjs/beast-ui/blob/main/docs/table.md)
 for file formats, URL behavior, limits, and maintenance.

@@ -77,8 +77,9 @@ setup
 
   // The input does not exist while collapsed, so focus has to wait for the
   // expanded render rather than being called from the button's own handler.
+  const focusInput = useEffectEvent(() => inputRef.current?.focus())
   useEffect(() => {
-    if (isExpanded) inputRef.current?.focus()
+    if (isExpanded) focusInput()
   }, [isExpanded])
 
   // Leaving the field empty-handed puts the icon back; leaving it with a query

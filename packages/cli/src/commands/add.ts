@@ -78,11 +78,11 @@ export async function planFiles(cwd: string, config: Config, items: RegistryItem
   return [...plan.values()]
 }
 
-export function installDependencies(cwd: string, manager: Config['packageManager'], dependencies: string[]): Promise<void> {
+export function installDependencies(cwd: string, manager: Config['packageManager'], dependencies: string[], flags: string[] = []): Promise<void> {
   if (!dependencies.length) return Promise.resolve()
   return new Promise((resolve, reject) => {
     // Capture output so the spinner stays clean; show it only when the install fails.
-    const child = spawn(manager, [manager === 'npm' ? 'install' : 'add', ...dependencies], { cwd, stdio: ['ignore', 'pipe', 'pipe'], shell: false })
+    const child = spawn(manager, [manager === 'npm' ? 'install' : 'add', ...flags, ...dependencies], { cwd, stdio: ['ignore', 'pipe', 'pipe'], shell: false })
     const output: string[] = []
     child.stdout.on('data', (chunk: Buffer) => output.push(chunk.toString()))
     child.stderr.on('data', (chunk: Buffer) => output.push(chunk.toString()))

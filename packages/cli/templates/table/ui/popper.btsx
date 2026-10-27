@@ -1,7 +1,7 @@
 
 import type { ClassValue } from 'octane/jsx-runtime'
 import { cn } from '../lib/utils.ts'
-import { useEffect, useState } from 'octane'
+import { useEffect, useLinkedState } from 'octane'
 
 module
   type Props = {
@@ -20,15 +20,13 @@ props {condition, value, className, trail, lead}: Props
 setup
   // CSS can animate the way out only while the node still exists, so it stays
   // mounted for the length of the exit animation after `condition` drops.
-  const [isMounted, setIsMounted] = useState(condition)
+  // Showing mounts immediately; hiding keeps the previous value until the timer.
+  const [isMounted, setIsMounted] = useLinkedState(condition, (next, previous) => next || (previous?.value ?? false))
   useEffect(() => {
-    if (condition) {
-      setIsMounted(true)
-      return
-    }
+    if (condition || !isMounted) return
     const timer = setTimeout(() => setIsMounted(false), EXIT_MS)
     return () => clearTimeout(timer)
-  }, [condition])
+  }, [condition, isMounted, setIsMounted])
 
 if (condition || isMounted)
   div(

@@ -1,5 +1,6 @@
 import { type ColumnDef, sortFn_alphanumeric } from '@octanejs/tanstack-table'
-import { createHeader } from '../ui/table/hyper/create-header'
+import ColumnHeaderLabel from '../ui/table/hyper/ColumnHeaderLabel.btsx'
+import type { LabelledColumn } from '../ui/table/hyper/table-contract.ts'
 import { features } from '../ui/table/hyper/features'
 import { inferCellEditor, type ColumnEditorInferenceOptions } from './column-editors.ts'
 import type { CellEditorType } from '../ui/table/hyper/cell-editor.ts'
@@ -44,9 +45,12 @@ export function buildColumns(
     const badgeOverride = options.badge?.(context)
     return {
       id,
-      header: createHeader(name),
+      // flexRender renders the compiled component with only the header context;
+      // its type also lists Octane's internal render arguments.
+      header: ColumnHeaderLabel as unknown as (context: { column: LabelledColumn }) => unknown,
       accessorFn: (row) => row[index] ?? '',
       meta: {
+        headerText: name,
         editor: override === undefined ? inferredEditor : override,
         badge: badgeOverride === undefined ? inferredBadge : badgeOverride,
       },

@@ -1,7 +1,7 @@
 import { Button as BaseButton } from '@octanejs/base-ui/button'
 import { Menu } from '@octanejs/base-ui/menu'
 import type { ColumnOrderState, ColumnPinningState, ColumnVisibilityState } from '@octanejs/tanstack-table'
-import { createElement, Suspense, useCallback, useMemo, useState } from 'octane'
+import { Suspense, useCallback, useMemo, useState } from 'octane'
 import { lazyComponent } from '../../../lib/component-utils.ts'
 import { Icon } from '../../../lib/icons/index.ts'
 import { cn } from '../../../lib/utils.ts'
@@ -28,7 +28,7 @@ module
     onColumnOrderChange?: (columnOrder: ColumnOrderState) => void
   }
 
-  type ColumnViewTriggerProps = Parameters<typeof BaseButton>[0] & {
+  type ColumnViewTriggerContentProps = {
     invisibleCount: number
   }
 
@@ -68,13 +68,11 @@ module
     on: cn(TOGGLE_ICON_CLASS, 'opacity-100 text-orange-400')
   }
 
-component ColumnViewTrigger
-  props { invisibleCount, children, className, ...buttonProps }: ColumnViewTriggerProps
+// Menu.Trigger renders the button itself; this is only what sits inside it.
+component ColumnViewTriggerContent
+  props { invisibleCount }: ColumnViewTriggerContentProps
 
-  BaseButton(
-    ~ {...buttonProps}
-    ~ className={cn(invisibleCount > 0 ? TRIGGER_CLASSES.some : TRIGGER_CLASSES.none, className)}
-    ~ )
+  fragment
     if invisibleCount > 0
       span(className='min-w-5 rounded-xs px-1 font-sans font-semibold text-white text-xs bg-orange-400 dark:text-white dark:bg-orange-400')
 
@@ -82,7 +80,6 @@ component ColumnViewTrigger
     else
       Icon(name='rows' className='size-4 -rotate-90 opacity-80')
     span(className='hidden font-mono text-xs opacity-70 md:flex uppercase') Cols
-    | #{children}
 
 component ColumnVisibilityItem
   props { column, isVisible, onToggle }: ColumnVisibilityItemProps
@@ -161,7 +158,8 @@ setup
   )
 
 Menu.Root
-  Menu.Trigger(render={createElement(ColumnViewTrigger, { invisibleCount })})
+  Menu.Trigger(className={invisibleCount > 0 ? TRIGGER_CLASSES.some : TRIGGER_CLASSES.none})
+    ColumnViewTriggerContent(invisibleCount={invisibleCount})
   Menu.Portal
     Menu.Positioner(align='start' className='isolate z-50 outline-none' sideOffset={7})
       Menu.Popup(className='table-popup-content pt-1 select-none origin-(--transform-origin) w-64 rounded-sm border border-btable-border/80 bg-btable-popover shadow-none outline-gray-200 transition-[transform,scale,opacity] data-ending-style:scale-90 data-ending-style:opacity-0 data-starting-style:scale-90 data-starting-style:opacity-0 dark:text-zinc-200')

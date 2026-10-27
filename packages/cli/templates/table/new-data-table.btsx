@@ -1,7 +1,7 @@
-import { createElement, useEffect, useMemo, useState } from 'octane'
+import { trustHTML, useMemo, useState } from 'octane'
 import DataTable from './ui/table/DataTable.btsx'
 import SheetFilters from './sheet-filters.btsx'
-import { jsonSheetDocument, type SheetRow } from './lib/sheets.ts'
+import { jsonSheetDocument, type SheetRow, type SheetTable } from './lib/sheets.ts'
 import { buildColumns, type BuildColumnsOptions } from './lib/sheet-columns.ts'
 import { applyCellEdits, createCellHistory, redoCellEdit, undoCellEdit } from './ui/table/hyper/cell-history.ts'
 import type { CellHistory } from './ui/table/hyper/cell-history.ts'
@@ -10,26 +10,27 @@ import './new-data-table.css'
 
 module
   export interface NewDataTableProps {
-    data: readonly Readonly<Record<string, unknown>>[] | undefined
+    data?: readonly Readonly<Record<string, unknown>>[]
+    /** A parsed sheet (CSV/workbook) to show as-is; takes precedence over `data`. */
+    sheet?: SheetTable | null
     name?: string
     columnOptions?: BuildColumnsOptions
   }
 
   const PAGE_SIZES = [50, 100, 250]
-  const PERSON_ICON = '<circle cx="12" cy="7.5" r="3.5"/><path d="M5 21v-3a7 7 0 0 1 14 0v3Z"/>'
+  const PERSON_ICON = trustHTML('<circle cx="12" cy="7.5" r="3.5"/><path d="M5 21v-3a7 7 0 0 1 14 0v3Z"/>')
 
-props { data, name = 'Data table', columnOptions }: NewDataTableProps
+props { data, sheet: providedSheet, name = 'Data table', columnOptions }: NewDataTableProps
 
 setup
-  const sheet = useMemo(() => data === undefined ? null : jsonSheetDocument(data, name).sheets[0], [data, name])
+  const sheet = useMemo(() => providedSheet !== undefined ? providedSheet
+    : data === undefined ? null : jsonSheetDocument(data, name).sheets[0], [providedSheet, data, name])
   const initialHistory = useMemo(() => createCellHistory(sheet?.rows ?? []), [sheet])
   const [historyState, setHistoryState] = useState(() => ({ source: sheet, history: initialHistory }))
+  // A replacement source starts a new editing session: history derives from the
+  // current sheet, and the next edit records it. URL filters/layout can change
+  // freely without discarding this session's values or undo history.
   const history = historyState.source === sheet ? historyState.history : initialHistory
-  // A replacement source starts a new editing session. URL filters/layout can
-  // change freely without discarding this session's values or undo history.
-  useEffect(() => {
-    setHistoryState((current) => current.source === sheet ? current : { source: sheet, history: initialHistory })
-  }, [sheet, initialHistory])
   const updateHistory = (update: (current: CellHistory) => CellHistory) => {
     setHistoryState((current) => {
       const previous = current.source === sheet ? current.history : initialHistory
@@ -56,20 +57,17 @@ setup
     // Preserve generated ids, accessors, and filter metadata for arbitrary JSON.
     const label = sheet?.columns[index] ?? ''
     const isPerson = /^(name|client|consultant|agent)$/i.test(label)
-    const header = Object.assign(() => createElement('span', { className: 'reference-column-label' },
-      isPerson ? createElement('svg', {
-        viewBox: '0 0 24 24', width: 20, height: 20, fill: 'none', stroke: 'currentColor',
-        strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true,
-        dangerouslySetInnerHTML: { __html: PERSON_ICON },
-      }) : null,
-      label,
-    ), { headerText: label })
+    const header = Object.assign(() => @{
+      <span className="reference-column-label">
+        {isPerson ? <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden={true} dangerouslySetInnerHTML={PERSON_ICON} /> : null}
+        {label}
+      </span>
+    }, { headerText: label })
     return Object.assign({}, column, { header, size: index === 0 ? 280 : 250, minSize: index === 0 ? 220 : 140 })
   }), [sheet, columnOptions])
 
-  const summary = sheet ? createElement('p', { className: 'reference-sheet-summary' },
-    `${sheet.columns.length} columns · ${sheet.totalRows.toLocaleString()} rows${sheet.truncated ? ` · showing first ${sheet.rows.length.toLocaleString()}` : ''}`,
-  ) : null
+  const summaryText = sheet ? `${sheet.columns.length} columns · ${sheet.totalRows.toLocaleString()} rows${sheet.truncated ? ` · showing first ${sheet.rows.length.toLocaleString()}` : ''}` : ''
+  const summary = sheet ? @{ <p className="reference-sheet-summary">{summaryText}</p> } : null
 
 div(className='beast-table reference-table-page')
   div(className='reference-table-frame')

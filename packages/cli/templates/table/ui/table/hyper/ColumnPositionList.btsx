@@ -1,5 +1,5 @@
 import { Menu } from '@octanejs/base-ui/menu'
-import { createElement, type ClassValue } from 'octane'
+import type { HTMLAttributes } from 'octane'
 import { Icon } from '../../../lib/icons/index.ts'
 import { cn } from '../../../lib/utils.ts'
 import { getColumnHeaderText } from './filter-utils.ts'
@@ -12,23 +12,25 @@ module
   // module lazily so opening a table does not pay for drag and drop.
   type Props = ColumnPositionListProps
 
+// Each sortable row renders as a menu item that keeps the menu open.
+component ReorderMenuItem
+  props { ...itemProps }: HTMLAttributes<HTMLDivElement>
+
+  Menu.Item({...itemProps} closeOnClick={false})
+
 props { columns, reorderableColumnIds, onReorder }: Props
 setup
+  const overlayClassName = cn(
+    'flex ml-1 h-8 w-[244px] items-center rounded-xs border border-btable-input/70',
+    'bg-btable-background px-3 text-sm text-btable-foreground shadow-md',
+  )
   const renderColumnOverlay = ({ value }: { value: string | number }) => {
     const column = columns.find((candidate) => candidate.id === String(value))
-    return createElement(
-      'div',
-      {
-        className: cn(
-          'flex ml-1 h-8 w-[244px] items-center rounded-xs border border-btable-input/70',
-          'bg-btable-background px-3 text-sm text-btable-foreground shadow-md',
-        ),
-      },
-      column ? getColumnHeaderText(column) : String(value),
-    )
+    const label = column ? getColumnHeaderText(column) : String(value)
+    return @{ <div className={overlayClassName}>{label}</div> }
   }
 Sortable(value={reorderableColumnIds} onValueChange={onReorder})
-  SortableContent(render={createElement('div', {className: 'space-y-0 p-0' as ClassValue})})
+  SortableContent(className='space-y-0 p-0')
     each column in columns key column.id
       if Boolean(column.getIsPinned())
         Menu.Item(
@@ -42,11 +44,9 @@ Sortable(value={reorderableColumnIds} onValueChange={onReorder})
         SortableItem(
           ~ value={column.id}
           ~ asHandle
-          ~ render={createElement(Menu.Item, {
-          ~   closeOnClick: false,
-          ~   title: `Drag ${getColumnHeaderText(column)} to reposition it`,
-          ~   className: 'group/drag flex h-8 items-center justify-between rounded-xs bg-transparent ps-3 pe-1 text-sm text-btable-foreground opacity-100 hover:bg-btable-sand/10 dark:text-white dark:hover:bg-btable-sand/2 dark:hover:text-btable-sand/95',
-          ~ })}
+          ~ render={ReorderMenuItem}
+          ~ title={`Drag ${getColumnHeaderText(column)} to reposition it`}
+          ~ className='group/drag flex h-8 items-center justify-between rounded-xs bg-transparent ps-3 pe-1 text-sm text-btable-foreground opacity-100 hover:bg-btable-sand/10 dark:text-white dark:hover:bg-btable-sand/2 dark:hover:text-btable-sand/95'
           ~ )
           span #{getColumnHeaderText(column)}
 

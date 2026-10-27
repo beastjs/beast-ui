@@ -16,6 +16,8 @@ export type CellEditorType = CellEditorBehavior & (
 
 /** Metadata supplied with each column definition; omitted editors default to text. */
 export interface DataTableColumnMeta {
+  /** Plain label for menus, filters and generated headers. */
+  readonly headerText?: string
   /** False makes the column read-only while keeping its cells selectable. */
   readonly editor?: CellEditorType | false
   /** Opt-in pills; omitted or false keeps the configured cell renderer. */

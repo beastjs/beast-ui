@@ -1,6 +1,6 @@
 import { functionalUpdate, useTable } from '@octanejs/tanstack-table'
 import type { ColumnDef, ColumnFiltersState, ColumnPinningState, ColumnVisibilityState, ExpandedState, GroupingState, PaginationState, RowData, RowSelectionState, SortingState } from '@octanejs/tanstack-table'
-import { useEffect, useId, useMemo, useRef, useState } from 'octane'
+import { useEffect, useId, useLinkedState, useMemo, useRef, useState } from 'octane'
 import { Button } from '../index.ts'
 import SelectOctane from '../SelectOctane.btsx'
 import { TableBody } from './index.ts'
@@ -135,7 +135,7 @@ module
   }
 
   const DEFAULT_PAGE_SIZES = [50, 100, 250, 500]
-  const CELL_STATISTICS_FORMAT = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const CELL_STATISTICS_FORMAT = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const DEFAULT_PINNING: ColumnPinningState = { start: [], end: [] }
   const NO_COLUMN_FILTERS: ColumnFiltersState = []
   const IDLE_QUERY_STATE: DataTableQueryProgress = {
@@ -217,8 +217,6 @@ setup
   // rather than inside `HyperSearch` because the controls it hides are the
   // field's siblings, not its children.
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
-  const [cellSelection, setCellSelection] = useState<CellSelection | null>(null)
-  const [editingCell, setEditingCell] = useState<{ address: CellAddress; value: string } | null>(null)
   const [isCellDragging, setIsCellDragging] = useState(false)
   const cellViewportRef = useRef<HTMLDivElement | null>(null)
   const cellDragRef = useRef<{ pointerId: number; anchor: CellAddress; focus: CellAddress; capture: HTMLElement } | null>(null)
@@ -227,12 +225,11 @@ setup
     initial: RowSelectionState; capture: HTMLElement
   } | null>(null)
   const suppressRowClickRef = useRef(false)
-  const [expanded, setExpanded] = useState<ExpandedState>({})
   const cellInstructionsId = useId()
 
   // Column pinning stays local: it is a layout preference, not part of the
   // shareable query the URL describes.
-  const [columnPinning, setColumnPinning] = useState(initialColumnPinning)
+  const [columnPinning, setColumnPinning] = useState(() => initialColumnPinning)
   const groupableColumnIds = useMemo(() => {
     const collect = (defs: ReadonlyArray<DataTableColumnDefinition>): string[] => defs.flatMap((column) => {
       if ('columns' in column && column.columns) return collect(column.columns)
@@ -275,7 +272,7 @@ setup
   // the conflicting flag so reloading preserves the exclusive selection.
   useEffect(() => {
     if (query.selectRows && query.selectCells) void setQuery({ selectCells: false })
-  }, [query.selectRows, query.selectCells])
+  })
   const globalFilter = query.q
   const columnFilters = query.filters
   const columnOrder = query.order
@@ -284,7 +281,8 @@ setup
   // Revalidate after a source replacement, since URL state can outlive columns.
   const grouping = useMemo(() => normalizeGrouping(query.group, groupableColumnIds), [query.group, groupableColumnIds])
   const groupingKey = JSON.stringify(grouping)
-  useEffect(() => setExpanded({}), [groupingKey])
+  // A new grouping starts collapsed; expand/collapse within it stays local state.
+  const [expanded, setExpanded] = useLinkedState<string, ExpandedState>(groupingKey, () => ({}))
   const sorting = useMemo<SortingState>(
     () => (query.sort ? [{ id: query.sort, desc: query.desc }] : []),
     [query.sort, query.desc],
@@ -387,6 +385,7 @@ setup
   // Read the table's resolved state once. These are distinct from the local
   // `columnPinning`/`columnVisibility` above: those are what we ask for, these
   // are what the table settled on, and the rows must be handed the latter.
+  const tableColumnOrder = table.state.columnOrder
   const tableColumnPinning = table.state.columnPinning
   const tableColumnVisibility = table.state.columnVisibility
   const tablePagination = table.state.pagination
@@ -395,7 +394,7 @@ setup
     if (grouping.length > 0 && tablePagination.pageIndex >= pageCount) {
       void setQuery({ page: pageCount })
     }
-  }, [groupingKey, tablePagination.pageIndex, pageCount])
+  })
   const leafColumns = table.getAllLeafColumns()
   // Editor behavior travels with column definitions, regardless of the row
   // schema or how a consumer generates its columns.
@@ -437,19 +436,25 @@ setup
   const visibleCellColumnIds = visibleCellColumns.map((column) => column.id)
   const cellColumnLabels = new Map(visibleCellColumns.map((column) => [column.id, getColumnHeaderText(column)]))
   const visibleGridKey = JSON.stringify([visibleRowIds, visibleCellColumnIds])
+  // A range refers to the current view. It resets when a query, page or column
+  // layout changes so hidden cells cannot accidentally be edited or cleared; the
+  // drag listener effect below cancels any in-flight drag on the same change.
+  const viewSource = [visibleGridKey, cellEditing?.resetKey, canSelectCells] as const
+  const sameView = { sourceEqual: (left: typeof viewSource, right: typeof viewSource) => left.every((value, index) => Object.is(value, right[index])) }
+  const [cellSelection, setCellSelection] = useLinkedState<typeof viewSource, CellSelection | null>(viewSource, () => null, sameView)
+  const [editingCell, setEditingCell] = useLinkedState<typeof viewSource, { address: CellAddress; value: string } | null>(viewSource, () => null, sameView)
+  // Drag listeners stay registered for one view: a view change re-registers them
+  // and cancels an in-flight drag, so they read the ids captured with that view.
+  const rowDragRowIds = useMemo(() => visibleRowIds, [visibleRowsKey, data, canSelectCells])
+  const rowDragSelectable = useMemo(() => selectableRowIds, [visibleRowsKey, data, canSelectCells])
+  const cellDragRowIds = useMemo(() => visibleRowIds, [visibleGridKey, cellEditing?.resetKey])
+  const cellDragColumnIds = useMemo(() => visibleCellColumnIds, [visibleGridKey, cellEditing?.resetKey])
+  const setTableRowSelection = table.setRowSelection
   const selectedCells = canSelectCells ? getVisibleSelectedCells(cellSelection, visibleRowIds, visibleCellColumnIds) : []
   const selectedCellKeys = new Set(selectedCells.map(cellAddressKey))
   const selectedCellStatistics = getNumericCellStatistics(
     selectedCells.map(({ rowId, columnId }) => table.getRow(rowId).getValue(columnId)),
   )
-  // A range refers to the current view. Clear it when a query, page or column
-  // layout changes so hidden cells cannot accidentally be edited or cleared.
-  useEffect(() => {
-    cellDragRef.current = null
-    setIsCellDragging(false)
-    setCellSelection(null)
-    setEditingCell(null)
-  }, [visibleGridKey, cellEditing?.resetKey, canSelectCells])
 
   const selectCell = (address: CellAddress, extend = false, toggle = false) => {
     setCellSelection((current) => toggle
@@ -503,7 +508,7 @@ setup
       const rowId = row?.dataset.rowId
       if (!row || rowId === undefined || !viewport.contains(row) || drag.focus === rowId) return
       drag.focus = rowId
-      table.setRowSelection(applyRowSelectionDrag(drag.initial, drag, visibleRowIds, selectableRowIds))
+      setTableRowSelection(applyRowSelectionDrag(drag.initial, drag, rowDragRowIds, rowDragSelectable))
     }
     const scrollAtEdge = () => {
       scrollFrame = 0
@@ -553,7 +558,7 @@ setup
       document.removeEventListener('lostpointercapture', finishDrag)
       window.removeEventListener('blur', cancelDrag)
     }
-  }, [visibleRowsKey, data, showSelectColumn, canSelectCells])
+  }, [showSelectColumn, rowDragRowIds, rowDragSelectable, setTableRowSelection])
   const startCellDrag = (event: PointerEvent, address: CellAddress) => {
     if (!canSelectCells || event.button !== 0 || !event.isPrimary) return
     event.preventDefault()
@@ -587,7 +592,7 @@ setup
       const address = { rowId: target.dataset.cellRowId!, columnId: target.dataset.cellColumnId! }
       if (cellAddressKey(address) === cellAddressKey(drag.focus)) return
       drag.focus = address
-      setCellSelection(extendCellSelection(selectCellSelection(drag.anchor), address, visibleRowIds, visibleCellColumnIds))
+      setCellSelection(extendCellSelection(selectCellSelection(drag.anchor), address, cellDragRowIds, cellDragColumnIds))
     }
     const scrollAtEdge = () => {
       scrollFrame = 0
@@ -653,7 +658,7 @@ setup
       document.removeEventListener('lostpointercapture', finishDrag)
       window.removeEventListener('blur', cancelDrag)
     }
-  }, [visibleGridKey, cellEditing?.resetKey, canSelectCells])
+  }, [canSelectCells, cellDragRowIds, cellDragColumnIds, setCellSelection, setIsCellDragging])
   const startCellEdit = (address: CellAddress, value: string) => {
     if (!canSelectCells || columnEditors.get(address.columnId) === false) return
     selectCell(address)
@@ -913,6 +918,7 @@ section(className='table-section relative overflow-hidden rounded-xs md:bg-btabl
                 ~ isSelected={row.getIsSelected()}
                 ~ showSelectColumn={showSelectColumn}
                 ~ selectColumnId={selectColumnId}
+                ~ columnOrder={tableColumnOrder}
                 ~ columnPinning={tableColumnPinning}
                 ~ columnVisibility={tableColumnVisibility}
                 ~ pinnedColumnLayouts={pinnedColumnLayouts}

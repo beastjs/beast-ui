@@ -1,7 +1,6 @@
 import Checkbox from '../../checkbox.btsx'
-import { createElement } from 'octane'
 import { cn } from '../../../lib/utils.ts'
-import type { ColumnPinningState, ColumnVisibilityState } from '@octanejs/tanstack-table'
+import type { ColumnOrderState, ColumnPinningState, ColumnVisibilityState } from '@octanejs/tanstack-table'
 import { TableCell, TableRow } from '../index.ts'
 import { orderCellsByColumnPinning } from './column-pinning.ts'
 import type { PinnedColumnLayout } from './column-pinning.ts'
@@ -16,6 +15,8 @@ module
   export interface HyperRowProps {
     className?: string
     row: HyperRowModel
+    /** The table's resolved order. Passed explicitly because the row object stays the same when columns move. */
+    columnOrder: ColumnOrderState
     columnPinning: ColumnPinningState
     columnVisibility: ColumnVisibilityState
     dropPosition?: RowDropPosition | null
@@ -81,19 +82,18 @@ module
     return className
   }
 
-props { className, row, columnPinning, columnVisibility, dropPosition = null, isActive, isDragging = false, isEditing, isPinned, isSelected, pinnedColumnLayouts, selectColumnId = DEFAULT_SELECT_COLUMN_ID, showSelectColumn, getCellInteraction, onDragOver, onDrop }: HyperRowProps
+props { className, row, columnOrder, columnPinning, columnVisibility, dropPosition = null, isActive, isDragging = false, isEditing, isPinned, isSelected, pinnedColumnLayouts, selectColumnId = DEFAULT_SELECT_COLUMN_ID, showSelectColumn, getCellInteraction, onDragOver, onDrop }: HyperRowProps
 
 setup
   const isHighlighted = isEditing || isActive
   const canSelect = showSelectColumn && row.getCanSelect() && !getCellInteraction
-  const cells = orderCellsByColumnPinning(row.getAllCells(), columnPinning)
+  const orderIndex = new Map(columnOrder.map((id, index) => [id, index]))
+  const orderedCells = row.getAllCells().slice().sort((left, right) =>
+    (orderIndex.get(left.column.id) ?? Number.MAX_SAFE_INTEGER) - (orderIndex.get(right.column.id) ?? Number.MAX_SAFE_INTEGER))
+  const cells = orderCellsByColumnPinning(orderedCells, columnPinning)
   const rowClassName = getRowClassName({ canSelect, dropPosition, isDragging, isHighlighted, isPinned, isSelected })
   const selectionControl = showSelectColumn && selectColumnId !== DEFAULT_SELECT_COLUMN_ID
-    ? createElement(Checkbox, {
-      'aria-label': `Select ${row.id}`,
-      checked: isSelected,
-      onCheckedChange: (checked: boolean) => row.toggleSelected(checked),
-    })
+    ? @{ <Checkbox aria-label={`Select ${row.id}`} checked={isSelected} onCheckedChange={(checked: boolean) => row.toggleSelected(checked)} /> }
     : undefined
 
   const handleRowClick = (event: MouseEvent) => {

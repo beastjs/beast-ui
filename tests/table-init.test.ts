@@ -44,7 +44,7 @@ test('installs the complete isolated feature, wires CSS once, and preserves the 
   expect(await readFile(path.join(cwd, 'src/style.css'), 'utf8')).toBe(css)
 })
 
-for (const [runtime, tableVersion] of [['0.2.13', '0.1.51'], ['0.3.2', '0.1.53'], ['0.4.3', '0.1.54'], ['0.8.0', '0.1.58'], ['0.12.1', '0.1.63']]) {
+for (const [runtime, tableVersion] of [['0.2.13', '0.1.51'], ['0.3.2', '0.1.53'], ['0.4.3', '0.1.54'], ['0.8.0', '0.1.58'], ['0.12.1', '0.1.63'], ['0.16.0', '0.1.63']]) {
   test(`selects adapter releases compatible with Octane ${runtime}`, async () => {
     const cwd = await project(runtime)
     const logs: string[] = []
@@ -53,6 +53,15 @@ for (const [runtime, tableVersion] of [['0.2.13', '0.1.51'], ['0.3.2', '0.1.53']
     expect(await readdir(path.join(cwd, 'src'))).toEqual(['style.css'])
   })
 }
+
+test('Octane 0.16 passes --legacy-peer-deps to npm only', async () => {
+  for (const [manager, flags] of [['npm', ['--legacy-peer-deps']], ['bun', []]] as const) {
+    const cwd = await project('0.16.0')
+    const calls: string[][] = []
+    await initTable({ cwd, packageManager: manager, install: async (_cwd, _manager, _deps, extra = []) => { calls.push(extra) }, ...quiet })
+    expect(calls).toEqual([[...flags]])
+  }
+})
 
 test('dry run reports every conflict and leaves CSS, dependencies, and files untouched', async () => {
   const cwd = await project()

@@ -22,12 +22,16 @@ export interface TableSetupFile { path: string; content: string; status: 'create
 const bindings = ['@octanejs/base-ui', '@octanejs/cmdk', '@octanejs/day-picker', '@octanejs/dnd-kit', '@octanejs/nuqs', '@octanejs/select', '@octanejs/tanstack-table'] as const
 // Each adapter series declares a matching Octane peer. Pin releases so future
 // minor adapters cannot silently switch the consuming project's runtime series.
+// Exception: no tanstack-table release targets 0.16 yet, so 0.16 reuses the
+// 0.12 build (peer ^0.12.0). It builds and runs on 0.16; npm needs
+// --legacy-peer-deps to accept the mismatched peer.
 const versions = {
   '2': ['0.1.53', '0.1.37', '0.0.19', '0.1.47', '0.1.41', '0.1.3', '0.1.51'],
   '3': ['0.1.54', '0.1.38', '0.0.20', '0.1.48', '0.1.42', '0.1.4', '0.1.53'],
   '4': ['0.1.55', '0.1.39', '0.0.21', '0.1.49', '0.1.43', '0.1.5', '0.1.54'],
   '8': ['0.1.59', '0.1.43', '0.0.25', '0.1.53', '0.1.47', '0.1.9', '0.1.58'],
   '12': ['0.1.65', '0.1.49', '0.0.30', '0.1.58', '0.1.52', '0.1.15', '0.1.63'],
+  '16': ['0.1.69', '0.1.53', '0.0.34', '0.1.62', '0.1.56', '0.1.19', '0.1.63'],
 } as const
 
 export async function initTable(options: TableInitOptions): Promise<TableSetupFile[]> {
@@ -49,8 +53,8 @@ export async function initTable(options: TableInitOptions): Promise<TableSetupFi
   // Resolve the installed version for workspace/file/range declarations too.
   const runtimePackage = await readOptional(path.join(cwd, 'node_modules/octane/package.json'))
   const runtime = runtimePackage ? JSON.parse(runtimePackage).version : declaredRuntime
-  const series = /^[~^]?0\.(2|3|4|8|12)\./.exec(runtime)?.[1] as keyof typeof versions | undefined
-  if (!series) throw new Error(`Unsupported Octane version ${runtime}. Table supports Octane 0.2.x, 0.3.x, 0.4.x, 0.8.x, and 0.12.x; install your project's Octane dependency before retrying a workspace or complex range.`)
+  const series = /^[~^]?0\.(2|3|4|8|12|16)\./.exec(runtime)?.[1] as keyof typeof versions | undefined
+  if (!series) throw new Error(`Unsupported Octane version ${runtime}. Table supports Octane 0.2.x, 0.3.x, 0.4.x, 0.8.x, 0.12.x, and 0.16.x; install your project's Octane dependency before retrying a workspace or complex range.`)
   const dependencies: Record<string, string> = { ...tableAssets.dependencies }
   bindings.forEach((name, index) => { dependencies[name] = versions[series][index] })
 
@@ -91,7 +95,8 @@ export async function initTable(options: TableInitOptions): Promise<TableSetupFi
   log(`Table setup (Octane 0.${series}.x)`)
   for (const file of files) log(`  ${file.status}: ${file.path}`)
   for (const dependency of install) log(`  dependency: ${dependency}`)
-  log(`  install with: ${manager}${options.skipInstall ? ' (skipped)' : ''}`)
+  log(`  install with: ${manager}${series === '16' && manager === 'npm' ? ' --legacy-peer-deps' : ''}${options.skipInstall ? ' (skipped)' : ''}`)
+  if (series === '16') log('  note: @octanejs/tanstack-table has no 0.16 release; using 0.1.63 (peer ^0.12.0).')
   const conflicts = files.filter(file => file.status === 'conflict')
   if (conflicts.length) {
     log(`Conflicts (preserved): ${conflicts.map(file => file.path).join(', ')}`)
@@ -99,7 +104,7 @@ export async function initTable(options: TableInitOptions): Promise<TableSetupFi
   }
   if (options.dryRun) { log('Dry run: no files or dependencies were changed.'); return files }
   // Finish preflight before either installation or file writes.
-  if (!options.skipInstall) await (options.install ?? installDependencies)(cwd, manager, install)
+  if (!options.skipInstall) await (options.install ?? installDependencies)(cwd, manager, install, series === '16' && manager === 'npm' ? ['--legacy-peer-deps'] : [])
   for (const file of files) {
     if (file.status === 'keep') continue
     const target = await safePath(cwd, file.path)

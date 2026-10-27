@@ -1,0 +1,8 @@
+import { getColumnHeaderText } from './filter-utils.ts'
+import type { LabelledColumn } from './table-contract.ts'
+
+// Generated columns render their label from the header context, which carries
+// `meta.headerText` for menus and filters too.
+props { column }: { column: LabelledColumn }
+
+div(className='ps-4 capitalize') #{getColumnHeaderText(column)}

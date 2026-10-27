@@ -172,5 +172,10 @@ export const getColumnHeaderText = (column: LabelledColumn): string => {
     return header.headerText
   }
 
+  const headerText = column.columnDef.meta?.headerText
+  if (typeof headerText === 'string') {
+    return headerText
+  }
+
   return formatColumnId(column.id)
 }
